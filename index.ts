@@ -1,5 +1,7 @@
 import * as chartDataJson from './chart_data.json';
 
+console.log(chartDataJson);
+
 let charts: ChartData[] = [];
 for (let i in chartDataJson) {
   charts.push(chartDataJson[i]);
@@ -47,6 +49,8 @@ export default class Chart {
     this.svg.setAttribute('width', `${props.width || '0'}`);
     this.svg.setAttribute('height', `${props.height || '0'}`);
 
+    this.svg.setAttribute('transform', `scale(1, -1)`);
+
     this.target.appendChild(this.svg);
 
     let scaleX = [];
@@ -79,7 +83,14 @@ export default class Chart {
           }
         }
 
-        scaleY.push(props.height / (max - min));      
+        if (min > 0) {
+          min = 0;
+        }
+        if (max < 0) {
+          max = 0;
+        }
+
+        scaleY.push(props.height / (max - min));
       }
     }
 
@@ -88,7 +99,9 @@ export default class Chart {
     this.strokeWidth = 1 / Math.sqrt(this.scaleX * this.scaleY);
 
     for (let id in data.types) {
-      this.drawLine(id, data.names[id], data.colors[id]);
+      if (data.types[id] === 'line') {
+        this.drawLine(id, data.names[id], data.colors[id]);
+      }
     }
   }
 
