@@ -109,7 +109,7 @@ export default class Chart {
     }
 
     this.drawNavigator();
-    // this.updateNav('');
+    this.updateNav('');
   }
 
   drawLine(id: string, name: string, color: string) {
@@ -356,8 +356,8 @@ export default class Chart {
 
     let scale = this.props.width / width;
     // console.log(scale);
-    let startIndex = Math.floor(this.selectedRange.start / this.scaleX) - 5;
-    let endIndex = Math.ceil(this.selectedRange.end / this.scaleX) + 5;
+    let startIndex = Math.floor(this.selectedRange.start / this.scaleX);
+    let endIndex = Math.ceil(this.selectedRange.end / this.scaleX);
     // console.log(startIndex);
 
     let min = 0;
@@ -367,15 +367,19 @@ export default class Chart {
     for (let id in this.data.types) {
       let column = this.data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
       if (this.data.types[id] === 'line') {
-        for (let i = startIndex; i < endIndex; i++) {
-          if (!column[i + 1]) {
-            console.log('no data');
+        for (let i = startIndex; i < endIndex; i += 1) {
+          if (i < 2 || i > column.length - 1) {
             continue;
           }
-          if (min > column[i + 1]) {
+        // for (let i = 1; i < endIndex; i++) {
+          // if (!column[i]) {
+          //   console.log('no data');
+          //   continue;
+          // }
+          if (min > column[i]) {
             min = <number>column[i];
           }
-          if (max < column[i + 1]) {
+          if (max < column[i]) {
             max = <number>column[i];
           }
         }
@@ -393,14 +397,14 @@ export default class Chart {
 
     let coord = this.selectedRange.start / scaleX;
     let translateLeft = -coord * scale;
-    // scaleY = this.props.height / (max - min);
-    console.log(max);
+    scaleY = this.props.height / (max - min);
+    // console.log(max);
 
     // console.log(this.scaleY);
     // console.log(scaleY);
 
     for (let i = 0; i < this.lines.length; i++) {
-      this.lines[i].setAttribute('transform', `scale(${scaleX}, ${this.scaleY}) translate(${translateLeft}, 0)`);
+      this.lines[i].setAttribute('transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft}, 0)`);
     }
     // console.log(scaleY);
   }
