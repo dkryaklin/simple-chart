@@ -30,6 +30,9 @@ export default class Chart {
 
   scaleX: number;
   scaleY: number;
+  navScaleX: number;
+  navScaleY: number;
+
   paths: {[key: string]: string};
 
   min: number;
@@ -48,6 +51,8 @@ export default class Chart {
 
   animRequest: number;
   lines: any[] = [];
+
+  yG: any;
 
   constructor(props: ChartProps, data: ChartData) {
     this.target = props.target;
@@ -93,7 +98,7 @@ export default class Chart {
         }
       } else {
         let column = data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
-        this.scaleX = props.width / (column.length - 1);
+        this.scaleX = props.width / (column.length - 1) / (column.length - 1) * column.length;
       }
     }
     console.log(this.max);
@@ -127,6 +132,11 @@ export default class Chart {
   }
 
   drawY() {
+    if (this.yG) {
+      this.svg.removeChild(this.yG);
+    }
+    this.yG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
     let linesAmount = 6;
     let diff = this.max - this.min;
     let round = Math.floor(diff / linesAmount);
@@ -141,7 +151,8 @@ export default class Chart {
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-width', '1');
   
-      this.svg.appendChild(path);
+      this.yG.appendChild(path);
+      // this.svg.appendChild(path);
 
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       text.setAttribute('x', '5');
@@ -150,15 +161,20 @@ export default class Chart {
 
       text.innerHTML = `${val}`;
 
-      this.svg.appendChild(text);
+      this.yG.appendChild(text);
+      // this.svg.appendChild(text);
 
       val += round;
     }
+
+    this.svg.insertBefore(this.yG, this.lines[0]);
   }
   
   drawX() {}
 
   drawNavigator() {
+    this.navScaleX = this.scaleX;
+    this.navScaleY = this.scaleY;
     let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
     svg.setAttribute('width', `${this.props.width || '0'}`);
@@ -188,6 +204,7 @@ export default class Chart {
       if (selectedBlock === 'none') {
         clickX = null;
       }
+      document.body.style.userSelect = 'none';
     });
     document.addEventListener('mousemove', (env: MouseEvent) => {
       let ctm = svg.getScreenCTM();
@@ -259,7 +276,10 @@ export default class Chart {
         })
       }
     });
-    document.addEventListener('mouseup', () => clickX = null);
+    document.addEventListener('mouseup', () => {
+      document.body.style.userSelect = '';
+      clickX = null;
+    });
     // document.addEventListener('mouseleave', () => clickX = null);
 
     const boxWhine = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -356,14 +376,13 @@ export default class Chart {
 
     let scale = this.props.width / width;
     // console.log(scale);
-    let startIndex = Math.floor(this.selectedRange.start / this.scaleX);
-    let endIndex = Math.ceil(this.selectedRange.end / this.scaleX);
+    let startIndex = Math.floor(this.selectedRange.start / this.navScaleX);
+    let endIndex = Math.ceil(this.selectedRange.end / this.navScaleX);
     // console.log(startIndex);
 
-    let min = 0;
-    let max = 0;
-    let scaleX;
-    let scaleY;
+    this.min = 0;
+    this.max = 0;
+
     for (let id in this.data.types) {
       let column = this.data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
       if (this.data.types[id] === 'line') {
@@ -376,15 +395,15 @@ export default class Chart {
           //   console.log('no data');
           //   continue;
           // }
-          if (min > column[i]) {
-            min = <number>column[i];
+          if (this.min > column[i]) {
+            this.min = <number>column[i];
           }
-          if (max < column[i]) {
-            max = <number>column[i];
+          if (this.max < column[i]) {
+            this.max = <number>column[i];
           }
         }
       } else {
-        scaleX = this.props.width * scale / (column.length - 1);
+        this.scaleX = this.props.width * scale / (column.length - 1) / (column.length - 1) * column.length;
       }
 
     }
@@ -395,17 +414,19 @@ export default class Chart {
     // console.log(min);
     // console.log(max);
 
-    let coord = this.selectedRange.start / scaleX;
+    let coord = this.selectedRange.start / this.scaleX;
     let translateLeft = -coord * scale;
-    scaleY = this.props.height / (max - min);
+    this.scaleY = this.props.height / (this.max - this.min);
     // console.log(max);
 
     // console.log(this.scaleY);
     // console.log(scaleY);
 
     for (let i = 0; i < this.lines.length; i++) {
-      this.lines[i].setAttribute('transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft}, 0)`);
+      this.lines[i].setAttribute('transform', `scale(${this.scaleX}, ${this.scaleY}) translate(${translateLeft}, 0)`);
     }
+
+    this.drawY();
     // console.log(scaleY);
   }
 
