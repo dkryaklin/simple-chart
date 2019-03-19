@@ -46,6 +46,9 @@ export default class Chart {
   boxLeft: any;
   boxRight: any;
 
+  animRequest: number;
+  lines: any[] = [];
+
   constructor(props: ChartProps, data: ChartData) {
     this.target = props.target;
     if (props.targetSelector) {
@@ -106,6 +109,7 @@ export default class Chart {
     }
 
     this.drawNavigator();
+    // this.updateNav('');
   }
 
   drawLine(id: string, name: string, color: string) {
@@ -118,7 +122,7 @@ export default class Chart {
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke-width', '2');
     path.setAttribute('transform', `scale(${this.scaleX}, ${this.scaleY})`);
-
+    this.lines.push(path);
     this.svg.appendChild(path);
   }
 
@@ -204,35 +208,54 @@ export default class Chart {
       // console.log(clickX);
       if (clickX) {
         if (selectedBlock === 'left') {
-          if (this.selectedRange.end - this.selectedRange.start > 50 && x > 0) {
-            this.selectedRange.start = x;
-          }
+          this.selectedRange.start = x;
+          // console.log(this.selectedRange.end - this.selectedRange.start);
+          // if (this.selectedRange.end - this.selectedRange.start >= 50 && x > 0) {
+          //   console.log(1);
+          //   this.selectedRange.start = x;
+          // } else if (this.selectedRange.end - this.selectedRange.start < 50) {
+          //   console.log(2);
+          //   // this.selectedRange.start = this.selectedRange.end - 50;
+          // } else if (x < 1) {
+          //   console.log(3);
+          //   this.selectedRange.start = 1;
+          // }
           
         } else if (selectedBlock === 'right') {
-          if (this.selectedRange.end - this.selectedRange.start > 50 && x <= this.props.width) {
-            this.selectedRange.end = x;
-          }
+          this.selectedRange.end = x;
+          // if (this.selectedRange.end - this.selectedRange.start >= 50 && x <= this.props.width) {
+          //   this.selectedRange.end = x;
+          // } else if (this.selectedRange.end - this.selectedRange.start < 50) {
+          //   this.selectedRange.end = this.selectedRange.start + 50;
+          // } else if (x > this.props.width) {
+          //   this.selectedRange.end = this.props.width;
+          // }
         } else if (selectedBlock === 'center') {
-          if (this.selectedRange.start <= 1 || this.selectedRange.end >= this.props.width) {
-            return;
-          }
-
           let width = this.selectedRange.end - this.selectedRange.start;
           let start = x - centerDiff;
           let end = start + width;
-          if (start < 1) {
-            start = 1;
-          }
-          if (end > this.props.width) {
-            end = this.props.width;
-          }
 
           this.selectedRange.start = start;
           this.selectedRange.end = end;
+
+          // if (start < 1) {
+          //   console.log(4);
+          //   this.selectedRange.start = 1;
+          //   this.selectedRange.end = 1 + width;
+          // } else if (end > this.props.width) {
+          //   console.log(5);
+          //   this.selectedRange.start = this.props.width - width;
+          //   this.selectedRange.end = this.props.width;
+          // } else {
+          //   console.log(6);
+          //   this.selectedRange.start = start;
+          //   this.selectedRange.end = end;
+          // }
         }
 
-        window.requestAnimationFrame(() => {
-          this.updateNav();
+        cancelAnimationFrame(this.animRequest);
+        this.animRequest = window.requestAnimationFrame(() => {
+          this.updateNav(selectedBlock);
         })
       }
     });
@@ -253,7 +276,7 @@ export default class Chart {
 
     this.target.appendChild(this.svg);
 
-    this.scaleY = 60 / (this.max - this.min);
+    let scaleY = 60 / (this.max - this.min);
 
     for (let id in this.data.types) {
       if (this.data.types[id] === 'line') {
@@ -265,7 +288,7 @@ export default class Chart {
         path.setAttribute('stroke', this.data.colors[id]);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-width', '1');
-        path.setAttribute('transform', `scale(${this.scaleX}, ${this.scaleY})`);
+        path.setAttribute('transform', `scale(${this.scaleX}, ${scaleY})`);
         path.setAttribute("style", "pointer-events: none; vector-effect: non-scaling-stroke;");
     
         svg.appendChild(path);
@@ -300,11 +323,86 @@ export default class Chart {
     this.target.appendChild(svg);
   }
 
-  updateNav() {
+  updateNav(selectedBlock) {
+    let width = this.selectedRange.end - this.selectedRange.start;
+    if (this.selectedRange.start < 1) {
+      this.selectedRange.start = 1;
+      if (selectedBlock === 'center') {
+        this.selectedRange.end = 1 + width;
+      }
+    } else if (this.selectedRange.end > this.props.width) {
+      this.selectedRange.end = this.props.width;
+      if (selectedBlock === 'center') {
+        this.selectedRange.start = this.props.width - width;
+      }
+    } else if (width < 50) {
+      // console.log(width);
+      if (selectedBlock === 'left') {
+        this.selectedRange.start = this.selectedRange.end - 50;
+      } else if (selectedBlock === 'right') {
+        this.selectedRange.end = this.selectedRange.start + 50;
+      }
+      // return;
+    }
+    // console.log(this.selectedRange.end - this.selectedRange.start);
     this.boxWhine.setAttribute("x", `${this.selectedRange.start + 5}`);
     this.boxWhine.setAttribute("width", `${this.selectedRange.end - this.selectedRange.start - 10}`);
     this.boxLeft.setAttribute('transform', `translate(${-this.props.width + this.selectedRange.start}, 0)`);
     this.boxRight.setAttribute('transform', `translate(${this.selectedRange.end}, 0)`);
+
+    // this.selectedRange.start convert to translate
+    // width 
+    width = this.selectedRange.end - this.selectedRange.start;
+
+    let scale = this.props.width / width;
+    // console.log(scale);
+    let startIndex = Math.floor(this.selectedRange.start / this.scaleX) - 5;
+    let endIndex = Math.ceil(this.selectedRange.end / this.scaleX) + 5;
+    // console.log(startIndex);
+
+    let min = 0;
+    let max = 0;
+    let scaleX;
+    let scaleY;
+    for (let id in this.data.types) {
+      let column = this.data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
+      if (this.data.types[id] === 'line') {
+        for (let i = startIndex; i < endIndex; i++) {
+          if (!column[i + 1]) {
+            console.log('no data');
+            continue;
+          }
+          if (min > column[i + 1]) {
+            min = <number>column[i];
+          }
+          if (max < column[i + 1]) {
+            max = <number>column[i];
+          }
+        }
+      } else {
+        scaleX = this.props.width * scale / (column.length - 1);
+      }
+
+    }
+
+    // indexArray start and end to calculate to get min max
+
+
+    // console.log(min);
+    // console.log(max);
+
+    let coord = this.selectedRange.start / scaleX;
+    let translateLeft = -coord * scale;
+    // scaleY = this.props.height / (max - min);
+    console.log(max);
+
+    // console.log(this.scaleY);
+    // console.log(scaleY);
+
+    for (let i = 0; i < this.lines.length; i++) {
+      this.lines[i].setAttribute('transform', `scale(${scaleX}, ${this.scaleY}) translate(${translateLeft}, 0)`);
+    }
+    // console.log(scaleY);
   }
 
   whatBlock(x: number) {
@@ -316,6 +414,10 @@ export default class Chart {
       return 'right';
     }
     return 'none';
+  }
+
+  destroy() {
+
   }
 }
 
