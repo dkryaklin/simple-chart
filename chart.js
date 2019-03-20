@@ -1,8 +1,6 @@
 // todos:
 // 1. fix height issues
 // 2. text styling
-// 3. less props for rects and others
-// 4. X inside lines
 // 5. touch events
 // 6. tooltip
 // 7. dark mode
@@ -12,9 +10,12 @@
 // 11. api
 // 12. animation for nav
 // 13. constants outside
+// 14. check support ie11 and mobiles (without parcel)
 
 window.Chart = function chart(target, width, height, chartData) {
   const doc = document;
+
+  // utils for create dom elements
   const dom = (tag, attrsList) => {
     const el = doc.createElementNS('http://www.w3.org/2000/svg', tag);
 
@@ -25,16 +26,16 @@ window.Chart = function chart(target, width, height, chartData) {
     };
 
     const appendFunc = (child, before) => {
-      if (before) {
-        el.insertBefore(child, before);
+      if (before && before.el) {
+        el.insertBefore(child.el, before.el);
       } else {
-        el.appendChild(child);
+        el.appendChild(child.el);
       }
     };
 
     const removeFunc = (child) => {
-      if (child) {
-        el.removeChild(child);
+      if (child.el) {
+        el.removeChild(child.el);
       }
     };
 
@@ -48,6 +49,7 @@ window.Chart = function chart(target, width, height, chartData) {
     };
   };
 
+  // utils for getting navBlock
   const getNavBlock = (x, selectedRange) => {
     if (x >= selectedRange.start && x < selectedRange.start + 5) {
       return 1;
@@ -64,6 +66,7 @@ window.Chart = function chart(target, width, height, chartData) {
   let maxY = 0;
   let lines = [];
   let timeLine;
+  // search maxY in all data and set data for lines and datetime
   chartData.columns.forEach((column) => {
     const id = column[0];
     const data = [...column];
@@ -84,24 +87,20 @@ window.Chart = function chart(target, width, height, chartData) {
     }
   });
 
-  const svg = dom('svg', [
-    ['width', `${width}`],
-    ['height', `${height}`],
-    ['transform', 'scale(1, -1)'],
-  ]);
-  target.appendChild(svg.el);
+  // create svg
+  const svg = dom('svg', [['style', `width: ${width}; height: ${height}; transform: scale(1, -1);`]]);
 
+  // create main lines in chart
   const linesWrapper = dom('g');
   lines = lines.map((line) => {
     const lineEl = dom('path', [
       ['d', line.path],
       ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
     ]);
-    linesWrapper.append(lineEl.el);
     return { ...line, ...lineEl };
   });
-  svg.append(linesWrapper.el);
 
+  // create navigator
   const navigatorWrapper = dom('g');
 
   const navScaleX = width / timeLine.length * (1 / timeLine.length * (timeLine.length + 1));
@@ -113,83 +112,38 @@ window.Chart = function chart(target, width, height, chartData) {
   let selectedNavBlock;
   const selectedRange = { start: width - width / 5, end: width };
 
-  const navBoxBack = dom('rect', [
-    ['x', '0'],
-    ['y', '0'],
-    ['width', `${width}`],
-    ['height', '60'],
-    ['fill', '#DEE9EE'],
-  ]);
-  navigatorWrapper.append(navBoxBack.el);
+  // navigator background
+  const navBoxBack = dom('rect', [['x', '0'], ['y', '0'], ['style', `width: ${width}; height: 60; fill: #DEE9EE`]]);
 
+  // navigator white box
   const navBoxWhite = dom('rect', [
-    ['x', `${selectedRange.start + 5}`],
-    ['y', '2'],
+    ['x', `${selectedRange.start + 5}`], ['y', '2'], ['rx', '3'], ['ry', '3'],
     ['width', `${selectedRange.end - selectedRange.start - 10}`],
-    ['height', '56'],
-    ['fill', '#fff'],
-    ['style', 'pointer-events: none;'],
-    ['rx', '3'],
-    ['ry', '3'],
+    ['style', 'pointer-events: none; fill: #fff; height: 56;'],
   ]);
-  navigatorWrapper.append(navBoxWhite.el);
 
+  // navigator sides boxes
+  const sideBoxStyles = `pointer-events: none; height: 60; fill: rgba(242, 252, 255, 0.8); width: ${width}`;
+  const navBoxLeft = dom('rect', [
+    ['x', '0'], ['y', '0'], ['transform', `translate(${-width + selectedRange.start}, 0)`], ['style', sideBoxStyles],
+  ]);
+  const navBoxRight = dom('rect', [
+    ['x', '0'], ['y', '0'], ['transform', `translate(${selectedRange.end}, 0)`], ['style', sideBoxStyles],
+  ]);
+
+  // navigator lines
   lines = lines.map((line) => {
     const lineEl = dom('path', [
-      ['d', line.path],
-      ['style', 'vector-effect: non-scaling-stroke;'],
-      ['stroke', line.color],
-      ['fill', 'none'],
-      ['stroke-width', '1'],
-      ['transform', `scale(${navScaleX}, ${navscaleY})`],
-      ['style', 'pointer-events: none; vector-effect: non-scaling-stroke;'],
+      ['d', line.path], ['transform', `scale(${navScaleX}, ${navscaleY})`],
+      ['style', `pointer-events: none; vector-effect: non-scaling-stroke; stroke-width: 1; fill: none; stroke: ${line.color}`],
     ]);
-    navigatorWrapper.append(lineEl.el);
     return { ...line, nav: lineEl };
   });
 
-  const navBoxLeft = dom('rect', [
-    ['x', '0'],
-    ['y', '0'],
-    ['width', `${width}`],
-    ['height', '60'],
-    ['fill', 'rgba(242, 252, 255, 0.8)'],
-    ['transform', `translate(${-width + selectedRange.start}, 0)`],
-    ['style', 'pointer-events: none;'],
-  ]);
-  navigatorWrapper.append(navBoxLeft.el);
-
-  const navBoxRight = dom('rect', [
-    ['x', '0'],
-    ['y', '0'],
-    ['width', `${width}`],
-    ['height', '60'],
-    ['fill', 'rgba(242, 252, 255, 0.8)'],
-    ['transform', `translate(${selectedRange.end}, 0)`],
-    ['style', 'pointer-events: none;'],
-  ]);
-  navigatorWrapper.append(navBoxRight.el);
-  svg.append(navigatorWrapper.el);
-
-  navBoxBack.el.addEventListener('mousedown', (env) => {
-    const ctm = svg.el.getScreenCTM();
-    navClickX = env.clientX - ctm.e + 1;
-    navDiffClick = navClickX - selectedRange.start;
-    selectedNavBlock = getNavBlock(navClickX, selectedRange);
-    if (!selectedNavBlock) {
-      navClickX = null;
-    }
-    doc.body.style.userSelect = 'none';
-  });
-
-  doc.addEventListener('mouseup', () => {
-    doc.body.style.userSelect = '';
-    navClickX = null;
-  });
-
+  // draw x axis
   let xAxisWrapper = {};
   const drawX = (scaleX) => {
-    svg.remove(xAxisWrapper.el);
+    svg.remove(xAxisWrapper);
 
     const rangeWidth = selectedRange.end - selectedRange.start;
     const scale = width / rangeWidth;
@@ -203,27 +157,24 @@ window.Chart = function chart(target, width, height, chartData) {
       if (i === 0 || x - prevX >= 50) {
         prevX = x;
         if (x + 50 > translateLeft && x < width + translateLeft) {
-          const text = dom('text', [
-            ['x', `${x}`],
-            ['y', '0'],
-            ['transform', 'scale(1, -1)'],
-          ]);
+          const text = dom('text', [['x', `${x}`], ['y', '0'], ['transform', 'scale(1, -1)']]);
 
           const date = new Date(timeLine[i]);
           const texts = `${date.toLocaleString('en-us', { month: 'short' })} ${date.getDate()}`;
           text.el.innerHTML = texts;
 
-          xAxisWrapper.append(text.el);
+          xAxisWrapper.append(text);
         }
       }
     }
 
-    svg.append(xAxisWrapper.el);
+    svg.append(xAxisWrapper);
   };
 
+  // draw y axis
   let yAxisWrapper = {};
   const drawY = (scaleY) => {
-    svg.remove(yAxisWrapper.el);
+    svg.remove(yAxisWrapper);
     yAxisWrapper = dom('g');
 
     const linesAmount = 6;
@@ -232,27 +183,21 @@ window.Chart = function chart(target, width, height, chartData) {
     let val = 0;
     for (let i = 0; i < linesAmount; i += 1) {
       const path = dom('path', [
-        ['d', `M0 ${val * scaleY} H ${width}`],
-        ['stroke', '#F1F1F1'],
-        ['fill', 'none'],
-        ['stroke-width', '1'],
+        ['d', `M0 ${val * scaleY} H ${width}`], ['style', 'stroke: #F1F1F1; fill: none; stroke-width: 1;'],
       ]);
-      yAxisWrapper.append(path.el);
+      yAxisWrapper.append(path);
 
-      const text = dom('text', [
-        ['x', '5'],
-        ['y', `-${val * scaleY + 5}`],
-        ['transform', 'scale(1, -1)'],
-      ]);
+      const text = dom('text', [['x', '5'], ['y', `-${val * scaleY + 5}`], ['transform', 'scale(1, -1)']]);
       text.el.innerHTML = `${val}`;
-      yAxisWrapper.append(text.el);
+      yAxisWrapper.append(text);
 
       val += round;
     }
 
-    svg.append(yAxisWrapper.el, linesWrapper.el);
+    svg.append(yAxisWrapper, linesWrapper);
   };
 
+  // reflow lines and navigator
   const updateNav = (selectedBlock) => {
     let rangeWidth = selectedRange.end - selectedRange.start;
     if (selectedRange.start < 1) {
@@ -312,6 +257,25 @@ window.Chart = function chart(target, width, height, chartData) {
     drawX(scaleX);
   };
 
+  // add event for mouse click
+  navBoxBack.el.addEventListener('mousedown', (env) => {
+    const ctm = svg.el.getScreenCTM();
+    navClickX = env.clientX - ctm.e + 1;
+    navDiffClick = navClickX - selectedRange.start;
+    selectedNavBlock = getNavBlock(navClickX, selectedRange);
+    if (!selectedNavBlock) {
+      navClickX = null;
+    }
+    doc.body.style.userSelect = 'none';
+  });
+
+  // add event for mouse up
+  doc.addEventListener('mouseup', () => {
+    doc.body.style.userSelect = '';
+    navClickX = null;
+  });
+
+  // event for mouse move
   document.addEventListener('mousemove', (env) => {
     const ctm = svg.el.getScreenCTM();
     const x = env.clientX - ctm.e + 1;
@@ -348,6 +312,19 @@ window.Chart = function chart(target, width, height, chartData) {
       updateNav(selectedNavBlock);
     });
   });
+
+  // add element in dom once
+  target.appendChild(svg.el);
+  svg.append(linesWrapper);
+  navigatorWrapper.append(navBoxBack);
+  navigatorWrapper.append(navBoxWhite);
+  lines.forEach((line) => {
+    linesWrapper.append(line);
+    navigatorWrapper.append(line.nav);
+  });
+  navigatorWrapper.append(navBoxLeft);
+  navigatorWrapper.append(navBoxRight);
+  svg.append(navigatorWrapper);
 
   updateNav(0);
 };
