@@ -1,63 +1,42 @@
-import * as chartDataJson from './chart_data.json';
-
-console.log(chartDataJson);
-
-let charts: ChartData[] = [];
-for (let i in chartDataJson) {
-  charts.push(chartDataJson[i]);
-}
-// for (let i = 2; i < chartData[0].columns[0].length; i += 1) {
-//   console.log(chartData[0].columns[0][i] - chartData[0].columns[0][i - 1]);
-// }
-
-interface ChartProps {
-  target?: HTMLElement,
-  targetSelector?: string,
-  width?: number,
-  height?: number,
-}
-
-interface ChartData {
-  colors: {[key: string]: string},
-  columns: (string | number)[][],
-  names: {[key: string]: string},
-  types: {[key: string]: string},  
-}
+/* eslint-disable no-new */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable guard-for-in */
 
 export default class Chart {
-  target: HTMLElement;
-  svg: SVGSVGElement;
+  constructor(props, data) {
+    // target;
+    // svg;
 
-  scaleX: number;
-  scaleY: number;
-  navScaleX: number;
-  navScaleY: number;
+    // scaleX;
+    // scaleY;
+    // navScaleX;
+    // navScaleY;
 
-  paths: {[key: string]: string};
+    // paths;
 
-  min: number;
-  max: number;
+    // min;
+    // max;
 
-  props: ChartProps;
-  data: ChartData;
+    // props;
+    // data;
 
-  periodStart;
-  periodEnd;
+    // periodStart;
+    // periodEnd;
 
-  selectedRange: {start: number, end: number} = {start: 100, end: 200};
-  boxWhine: any;
-  boxLeft: any;
-  boxRight: any;
+    this.selectedRange = { start: 100, end: 200 };
+    // boxWhine;
+    // boxLeft;
+    // boxRight;
 
-  animRequest: number;
-  lines: any[] = [];
+    // animRequest;
+    this.lines = [];
 
-  xG: any;
-  yG: any;
-  chartsG: any;
-  scale: number;
+    // xG;
+    // yG;
+    // chartsG;
+    // scale;
 
-  constructor(props: ChartProps, data: ChartData) {
+
     this.target = props.target;
     if (props.targetSelector) {
       this.target = document.querySelector(props.targetSelector);
@@ -68,40 +47,39 @@ export default class Chart {
       return;
     }
 
-    this.props = {...props};
-    this.data = {...data};
+    this.props = { ...props };
+    this.data = { ...data };
 
-    this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
     this.svg.setAttribute('width', `${props.width || '0'}`);
     this.svg.setAttribute('height', `${props.height || '0'}`);
 
-    this.svg.setAttribute('transform', `scale(1, -1)`);
+    this.svg.setAttribute('transform', 'scale(1, -1)');
 
     this.target.appendChild(this.svg);
     this.paths = {};
     this.min = 0;
     this.max = 0;
 
-    for (let id in data.types) {
-      let column = data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
+    for (const id in data.types) {
+      const column = data.columns.filter(column1 => column1[0] === id)[0];
 
       if (data.types[id] === 'line') {
-
         this.paths[id] = `M0 ${column[1]}`;
-        for (let i = 2; i < column.length; i += 1) {    
+        for (let i = 2; i < column.length; i += 1) {
           this.paths[id] += `L ${i - 1} ${column[i]}`;
-    
+
           if (this.min > column[i]) {
-            this.min = <number>column[i];
+            this.min = column[i];
           }
           if (this.max < column[i]) {
-            this.max = <number>column[i];
+            this.max = column[i];
           }
         }
       } else {
-        let column = data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
-        this.scaleX = props.width / (column.length - 1) / (column.length - 1) * column.length;
+        const column2 = data.columns.filter(column1 => column1[0] === id)[0];
+        this.scaleX = props.width / (column2.length - 1) / (column2.length - 1) * column2.length;
       }
     }
     console.log(this.max);
@@ -110,7 +88,7 @@ export default class Chart {
 
     // this.drawY();
 
-    for (let id in data.types) {
+    for (const id in data.types) {
       if (data.types[id] === 'line') {
         this.drawLine(id, data.names[id], data.colors[id]);
       }
@@ -119,8 +97,8 @@ export default class Chart {
     this.updateNav('');
   }
 
-  drawLine(id: string, name: string, color: string) {
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  drawLine(id, name, color) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     path.setAttribute('d', this.paths[id]);
 
@@ -137,42 +115,41 @@ export default class Chart {
     if (this.xG) {
       this.svg.removeChild(this.xG);
     }
-    this.xG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.xG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-    let column = this.data.columns.filter((column: (string | number)[]) => column[0] === 'x')[0];
+    const column = this.data.columns.filter(column1 => column1[0] === 'x')[0];
 
     // let coord =;
     console.log(this.selectedRange.start);
-    let translateLeft = (this.selectedRange.start - 1) * this.scale;
+    const translateLeft = (this.selectedRange.start - 1) * this.scale;
     this.xG.setAttribute('transform', `translate(-${translateLeft}, 0)`);
     // console.log(translateLeft * scale);
     let prevX;
     for (let i = 1; i < column.length; i += 1) {
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      let x = (i - 1) * this.scaleX; // + translateLeft;
-      if (i !== 1) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      const x = (i - 1) * this.scaleX; // + translateLeft;
+      if (i !== 1 && x - prevX < 50) {
+        //
+      } else {
+        // console.log(x);
+        prevX = x;
+        // console.log(translateLeft * this.scaleX);
+        if (x + 50 < translateLeft || x - 50 > this.props.width + translateLeft) {
+          //
+        } else {
+          // console.log(x)
+          text.setAttribute('x', `${x}`);
+          text.setAttribute('y', '0');
+          text.setAttribute('transform', 'scale(1, -1)');
 
-        if (x - prevX < 50) {
-          continue;
+          const date = new Date(column[i]);
+          const texts = `${date.toLocaleString('en-us', { month: 'short' })} ${date.getDate()}`;
+          // console.log(texts);
+          text.innerHTML = texts;
+
+          this.xG.appendChild(text);
         }
       }
-      // console.log(x);
-      prevX = x;
-      // console.log(translateLeft * this.scaleX);
-      if (x + 50 < translateLeft || x - 50 > this.props.width + translateLeft) {
-        continue;
-      }
-      // console.log(x)
-      text.setAttribute('x', `${x}`);
-      text.setAttribute('y', '0');
-      text.setAttribute('transform', `scale(1, -1)`);
-
-      let date = new Date(column[i]);
-      let texts = `${date.toLocaleString('en-us', { month: 'short' })} ${date.getDate()}`;
-      // console.log(texts);
-      text.innerHTML = texts;
-
-      this.xG.appendChild(text);
     }
 
     this.svg.appendChild(this.xG);
@@ -182,29 +159,29 @@ export default class Chart {
     if (this.yG) {
       this.svg.removeChild(this.yG);
     }
-    this.yG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    this.yG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-    let linesAmount = 6;
-    let diff = this.max - this.min;
-    let round = Math.floor(diff / linesAmount);
+    const linesAmount = 6;
+    const diff = this.max - this.min;
+    const round = Math.floor(diff / linesAmount);
 
     let val = 0;
     for (let i = 0; i < linesAmount; i += 1) {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
       path.setAttribute('d', `M0 ${val * this.scaleY} H ${this.props.width}`);
-  
+
       path.setAttribute('stroke', '#F1F1F1');
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-width', '1');
-  
+
       this.yG.appendChild(path);
       // this.svg.appendChild(path);
 
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', '5');
       text.setAttribute('y', `-${val * this.scaleY + 5}`);
-      text.setAttribute('transform', `scale(1, -1)`);
+      text.setAttribute('transform', 'scale(1, -1)');
 
       text.innerHTML = `${val}`;
 
@@ -220,21 +197,21 @@ export default class Chart {
   drawNavigator() {
     this.navScaleX = this.scaleX;
     this.navScaleY = this.scaleY;
-    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
     svg.setAttribute('width', `${this.props.width || '0'}`);
     svg.setAttribute('height', '60');
 
-    svg.setAttribute('transform', `scale(1, -1)`);
+    svg.setAttribute('transform', 'scale(1, -1)');
 
-    const boxBack = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    boxBack.setAttribute("x", "0");
-    boxBack.setAttribute("y", "0");
-    boxBack.setAttribute("width", `${this.props.width}`);
-    boxBack.setAttribute("height", "60");
-    boxBack.setAttribute("fill", "#DEE9EE");
-    boxBack.setAttribute("rx", "3");
-    boxBack.setAttribute("ry", "3");
+    const boxBack = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    boxBack.setAttribute('x', '0');
+    boxBack.setAttribute('y', '0');
+    boxBack.setAttribute('width', `${this.props.width}`);
+    boxBack.setAttribute('height', '60');
+    boxBack.setAttribute('fill', '#DEE9EE');
+    boxBack.setAttribute('rx', '3');
+    boxBack.setAttribute('ry', '3');
 
     svg.appendChild(boxBack);
 
@@ -242,7 +219,7 @@ export default class Chart {
     let selectedBlock;
     let centerDiff;
     boxBack.addEventListener('mousedown', (env) => {
-      let ctm = svg.getScreenCTM();
+      const ctm = svg.getScreenCTM();
       clickX = env.clientX - ctm.e + 1;
       centerDiff = clickX - this.selectedRange.start;
       selectedBlock = this.whatBlock(clickX);
@@ -251,20 +228,20 @@ export default class Chart {
       }
       document.body.style.userSelect = 'none';
     });
-    document.addEventListener('mousemove', (env: MouseEvent) => {
-      let ctm = svg.getScreenCTM();
-      let x = env.clientX - ctm.e + 1;
+    document.addEventListener('mousemove', (env) => {
+      const ctm = svg.getScreenCTM();
+      const x = env.clientX - ctm.e + 1;
 
-      let block = this.whatBlock(x);
+      const block = this.whatBlock(x);
 
       if (block === 'left') {
-        boxBack.style.cursor = "col-resize";
+        boxBack.style.cursor = 'col-resize';
       } else if (block === 'center') {
-        boxBack.style.cursor = "pointer";
+        boxBack.style.cursor = 'pointer';
       } else if (block === 'right') {
-        boxBack.style.cursor = "col-resize";
+        boxBack.style.cursor = 'col-resize';
       } else {
-        boxBack.style.cursor = "default";
+        boxBack.style.cursor = 'default';
       }
 
       // console.log(clickX);
@@ -282,7 +259,6 @@ export default class Chart {
           //   console.log(3);
           //   this.selectedRange.start = 1;
           // }
-          
         } else if (selectedBlock === 'right') {
           this.selectedRange.end = x;
           // if (this.selectedRange.end - this.selectedRange.start >= 50 && x <= this.props.width) {
@@ -293,9 +269,9 @@ export default class Chart {
           //   this.selectedRange.end = this.props.width;
           // }
         } else if (selectedBlock === 'center') {
-          let width = this.selectedRange.end - this.selectedRange.start;
-          let start = x - centerDiff;
-          let end = start + width;
+          const width = this.selectedRange.end - this.selectedRange.start;
+          const start = x - centerDiff;
+          const end = start + width;
 
           this.selectedRange.start = start;
           this.selectedRange.end = end;
@@ -318,7 +294,7 @@ export default class Chart {
         cancelAnimationFrame(this.animRequest);
         this.animRequest = window.requestAnimationFrame(() => {
           this.updateNav(selectedBlock);
-        })
+        });
       }
     });
     document.addEventListener('mouseup', () => {
@@ -327,60 +303,60 @@ export default class Chart {
     });
     // document.addEventListener('mouseleave', () => clickX = null);
 
-    const boxWhine = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    boxWhine.setAttribute("x", `${this.selectedRange.start + 5}`);
-    boxWhine.setAttribute("y", "2");
-    boxWhine.setAttribute("width", `${this.selectedRange.end - this.selectedRange.start - 10}`);
-    boxWhine.setAttribute("height", "56");
-    boxWhine.setAttribute("fill", "#fff");
-    boxWhine.setAttribute("style", "pointer-events: none;");
+    const boxWhine = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    boxWhine.setAttribute('x', `${this.selectedRange.start + 5}`);
+    boxWhine.setAttribute('y', '2');
+    boxWhine.setAttribute('width', `${this.selectedRange.end - this.selectedRange.start - 10}`);
+    boxWhine.setAttribute('height', '56');
+    boxWhine.setAttribute('fill', '#fff');
+    boxWhine.setAttribute('style', 'pointer-events: none;');
     this.boxWhine = boxWhine;
 
     svg.appendChild(boxWhine);
-    
+
 
     this.target.appendChild(this.svg);
 
-    let scaleY = 60 / (this.max - this.min);
+    const scaleY = 60 / (this.max - this.min);
 
-    for (let id in this.data.types) {
+    for (const id in this.data.types) {
       if (this.data.types[id] === 'line') {
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
         path.setAttribute('d', this.paths[id]);
-    
+
         path.setAttribute('style', 'vector-effect: non-scaling-stroke;');
         path.setAttribute('stroke', this.data.colors[id]);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-width', '1');
         path.setAttribute('transform', `scale(${this.scaleX}, ${scaleY})`);
-        path.setAttribute("style", "pointer-events: none; vector-effect: non-scaling-stroke;");
-    
+        path.setAttribute('style', 'pointer-events: none; vector-effect: non-scaling-stroke;');
+
         svg.appendChild(path);
       }
     }
 
-    const boxLeft = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    boxLeft.setAttribute("x", "0");
-    boxLeft.setAttribute("y", "0");
-    boxLeft.setAttribute("width", `${this.props.width}`);
-    boxLeft.setAttribute("height", "60");
-    boxLeft.setAttribute("fill", "rgba(242, 252, 255, 0.8)");
+    const boxLeft = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    boxLeft.setAttribute('x', '0');
+    boxLeft.setAttribute('y', '0');
+    boxLeft.setAttribute('width', `${this.props.width}`);
+    boxLeft.setAttribute('height', '60');
+    boxLeft.setAttribute('fill', 'rgba(242, 252, 255, 0.8)');
     boxLeft.setAttribute('transform', `translate(${-this.props.width + this.selectedRange.start}, 0)`);
-    boxLeft.setAttribute("style", 'pointer-events: none;');
+    boxLeft.setAttribute('style', 'pointer-events: none;');
     this.boxLeft = boxLeft;
 
     svg.appendChild(boxLeft);
 
-    
-    const boxRight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    boxRight.setAttribute("x", "0");
-    boxRight.setAttribute("y", "0");
-    boxRight.setAttribute("width", `${this.props.width}`);
-    boxRight.setAttribute("height", "60");
-    boxRight.setAttribute("fill", "rgba(242, 252, 255, 0.8)");
+
+    const boxRight = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    boxRight.setAttribute('x', '0');
+    boxRight.setAttribute('y', '0');
+    boxRight.setAttribute('width', `${this.props.width}`);
+    boxRight.setAttribute('height', '60');
+    boxRight.setAttribute('fill', 'rgba(242, 252, 255, 0.8)');
     boxRight.setAttribute('transform', `translate(${this.selectedRange.end}, 0)`);
-    boxRight.setAttribute("style", "pointer-events: none;");
+    boxRight.setAttribute('style', 'pointer-events: none;');
     this.boxRight = boxRight;
 
     svg.appendChild(boxRight);
@@ -410,47 +386,48 @@ export default class Chart {
       // return;
     }
     // console.log(this.selectedRange.end - this.selectedRange.start);
-    this.boxWhine.setAttribute("x", `${this.selectedRange.start + 5}`);
-    this.boxWhine.setAttribute("width", `${this.selectedRange.end - this.selectedRange.start - 10}`);
+    this.boxWhine.setAttribute('x', `${this.selectedRange.start + 5}`);
+    this.boxWhine.setAttribute('width', `${this.selectedRange.end - this.selectedRange.start - 10}`);
     this.boxLeft.setAttribute('transform', `translate(${-this.props.width + this.selectedRange.start}, 0)`);
     this.boxRight.setAttribute('transform', `translate(${this.selectedRange.end}, 0)`);
 
     // this.selectedRange.start convert to translate
-    // width 
+    // width
     width = this.selectedRange.end - this.selectedRange.start;
 
     this.scale = this.props.width / width;
     // console.log(scale);
-    let startIndex = Math.floor(this.selectedRange.start / this.navScaleX);
-    let endIndex = Math.ceil(this.selectedRange.end / this.navScaleX);
+    const startIndex = Math.floor(this.selectedRange.start / this.navScaleX);
+    const endIndex = Math.ceil(this.selectedRange.end / this.navScaleX);
     // console.log(startIndex);
 
     this.min = 0;
     this.max = 0;
 
-    for (let id in this.data.types) {
-      let column = this.data.columns.filter((column: (string | number)[]) => column[0] === id)[0];
+    for (const id in this.data.types) {
+      const column = this.data.columns.filter(column1 => column1[0] === id)[0];
       if (this.data.types[id] === 'line') {
         for (let i = startIndex; i < endIndex; i += 1) {
           if (i < 2 || i > column.length - 1) {
-            continue;
-          }
-        // for (let i = 1; i < endIndex; i++) {
-          // if (!column[i]) {
-          //   console.log('no data');
-          //   continue;
-          // }
-          if (this.min > column[i]) {
-            this.min = <number>column[i];
-          }
-          if (this.max < column[i]) {
-            this.max = <number>column[i];
+            //
+          } else {
+            // for (let i = 1; i < endIndex; i++) {
+            // if (!column[i]) {
+            //   console.log('no data');
+            //   continue;
+            // }
+            if (this.min > column[i]) {
+              this.min = column[i];
+            }
+            if (this.max < column[i]) {
+              this.max = column[i];
+            }
           }
         }
       } else {
-        this.scaleX = this.props.width * this.scale / (column.length - 1) / (column.length - 1) * column.length;
+        this.scaleX = this.props.width * this.scale;
+        this.scaleX = this.scaleX / (column.length - 1) / (column.length - 1) * column.length;
       }
-
     }
 
     // indexArray start and end to calculate to get min max
@@ -459,8 +436,8 @@ export default class Chart {
     // console.log(min);
     // console.log(max);
 
-    let coord = this.selectedRange.start / this.scaleX;
-    let translateLeft = -coord * this.scale;
+    const coord = this.selectedRange.start / this.scaleX;
+    const translateLeft = -coord * this.scale;
     // console.log(translateLeft);
     this.scaleY = this.props.height / (this.max - this.min);
     // console.log(max);
@@ -468,7 +445,7 @@ export default class Chart {
     // console.log(this.scaleY);
     // console.log(scaleY);
 
-    for (let i = 0; i < this.lines.length; i++) {
+    for (let i = 0; i < this.lines.length; i += 1) {
       this.lines[i].setAttribute('transform', `scale(${this.scaleX}, ${this.scaleY}) translate(${translateLeft}, 0)`);
     }
 
@@ -477,23 +454,21 @@ export default class Chart {
     // console.log(scaleY);
   }
 
-  whatBlock(x: number) {
+  whatBlock(x) {
     if (x >= this.selectedRange.start && x < this.selectedRange.start + 5) {
       return 'left';
-    } else if (x >= this.selectedRange.start + 5 && x < this.selectedRange.end - 5) {
+    }
+    if (x >= this.selectedRange.start + 5 && x < this.selectedRange.end - 5) {
       return 'center';
-    } else if (x >= this.selectedRange.end - 5 && x < this.selectedRange.end) {
+    }
+    if (x >= this.selectedRange.end - 5 && x < this.selectedRange.end) {
       return 'right';
     }
     return 'none';
   }
-
-  destroy() {
-
-  }
 }
 
-const chart0 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[0]);
+new Chart({ targetSelector: 'body', width: 500, height: 300 }, window.chartData[0]);
 // const chart1 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[1]);
 // const chart2 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[2]);
 // const chart3 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[3]);
