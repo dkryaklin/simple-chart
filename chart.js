@@ -1,6 +1,4 @@
 // todos:
-// 1. fix height issues
-// 2. text styling
 // 5. touch events
 // 6. tooltip
 // 7. dark mode
@@ -11,8 +9,14 @@
 // 12. animation for nav
 // 13. constants outside
 // 14. check support ie11 and mobiles (without parcel)
+// 15. make bigger zones for drop nav
+// 16. new way to draw x axis via split width on lines
 
 window.Chart = function chart(target, width, height, chartData) {
+  const indent = 15;
+  const xScaleHeight = 30;
+  const navHeight = 60;
+
   const doc = document;
 
   // utils for create dom elements
@@ -103,8 +107,8 @@ window.Chart = function chart(target, width, height, chartData) {
   // create navigator
   const navigatorWrapper = dom('g');
 
-  const navScaleX = width / timeLine.length * (1 / timeLine.length * (timeLine.length + 1));
-  const navscaleY = 60 / maxY;
+  const navScaleX = (width - indent * 2) / (timeLine.length ** 2) * (timeLine.length + 1);
+  const navscaleY = navHeight / maxY;
 
   let navDiffClick;
   let navClickX;
@@ -113,28 +117,24 @@ window.Chart = function chart(target, width, height, chartData) {
   const selectedRange = { start: width - width / 5, end: width };
 
   // navigator background
-  const navBoxBack = dom('rect', [['x', '0'], ['y', '0'], ['style', `width: ${width}; height: 60; fill: #DEE9EE`]]);
+  const navBoxBack = dom('rect', [['x', indent], ['y', '0'], ['style', `width: ${width - indent * 2}; height: ${navHeight}; fill: #DEE9EE`]]);
 
   // navigator white box
   const navBoxWhite = dom('rect', [
     ['x', `${selectedRange.start + 5}`], ['y', '2'], ['rx', '3'], ['ry', '3'],
     ['width', `${selectedRange.end - selectedRange.start - 10}`],
-    ['style', 'pointer-events: none; fill: #fff; height: 56;'],
+    ['style', `pointer-events: none; fill: #fff; height: ${navHeight - 4};`],
   ]);
 
   // navigator sides boxes
-  const sideBoxStyles = `pointer-events: none; height: 60; fill: rgba(242, 252, 255, 0.8); width: ${width}`;
-  const navBoxLeft = dom('rect', [
-    ['x', '0'], ['y', '0'], ['transform', `translate(${-width + selectedRange.start}, 0)`], ['style', sideBoxStyles],
-  ]);
-  const navBoxRight = dom('rect', [
-    ['x', '0'], ['y', '0'], ['transform', `translate(${selectedRange.end}, 0)`], ['style', sideBoxStyles],
-  ]);
+  const sideBoxStyles = `pointer-events: none; height: ${navHeight}; fill: rgba(242, 252, 255, 0.8);`;
+  const navBoxLeft = dom('rect', [['x', indent], ['y', '0'], ['style', sideBoxStyles]]);
+  const navBoxRight = dom('rect', [['x', selectedRange.end], ['y', '0'], ['style', sideBoxStyles]]);
 
   // navigator lines
   lines = lines.map((line) => {
     const lineEl = dom('path', [
-      ['d', line.path], ['transform', `scale(${navScaleX}, ${navscaleY})`],
+      ['d', line.path], ['transform', `scale(${navScaleX}, ${navscaleY}) translate(${indent / navScaleX})`],
       ['style', `pointer-events: none; vector-effect: non-scaling-stroke; stroke-width: 1; fill: none; stroke: ${line.color}`],
     ]);
     return { ...line, nav: lineEl };
@@ -145,19 +145,24 @@ window.Chart = function chart(target, width, height, chartData) {
   const drawX = (scaleX) => {
     svg.remove(xAxisWrapper);
 
-    const rangeWidth = selectedRange.end - selectedRange.start;
+    const blockWidth = 80;
+
+    const rangeWidth = selectedRange.end - selectedRange.start + indent * 2;
     const scale = width / rangeWidth;
     const translateLeft = (selectedRange.start - 1) * scale;
 
-    xAxisWrapper = dom('g', [['transform', `translate(-${translateLeft}, 0)`]]);
+    xAxisWrapper = dom('g', [['transform', `translate(-${translateLeft}, ${navHeight + 10})`]]);
 
     let prevX = 0;
     for (let i = 0; i < timeLine.length; i += 1) {
       const x = i * scaleX;
-      if (i === 0 || x - prevX >= 50) {
+      if (i === 0 || x - prevX >= 80) {
         prevX = x;
-        if (x + 50 > translateLeft && x < width + translateLeft) {
-          const text = dom('text', [['x', `${x}`], ['y', '0'], ['transform', 'scale(1, -1)']]);
+        if (x + 65 > translateLeft && x < width + translateLeft) {
+          const text = dom('text', [
+            ['x', `${x}`], ['y', '0'], ['transform', 'scale(1, -1)'],
+            ['style', 'stroke: #96A2AA; font-family: sans-serif; stroke-width: 0; font-size: 18;'],
+          ]);
 
           const date = new Date(timeLine[i]);
           const texts = `${date.toLocaleString('en-us', { month: 'short' })} ${date.getDate()}`;
@@ -175,7 +180,7 @@ window.Chart = function chart(target, width, height, chartData) {
   let yAxisWrapper = {};
   const drawY = (scaleY) => {
     svg.remove(yAxisWrapper);
-    yAxisWrapper = dom('g');
+    yAxisWrapper = dom('g', [['transform', `translate(0, ${navHeight + xScaleHeight})`]]);
 
     const linesAmount = 6;
     const round = Math.floor(maxY / linesAmount);
@@ -183,11 +188,14 @@ window.Chart = function chart(target, width, height, chartData) {
     let val = 0;
     for (let i = 0; i < linesAmount; i += 1) {
       const path = dom('path', [
-        ['d', `M0 ${val * scaleY} H ${width}`], ['style', 'stroke: #F1F1F1; fill: none; stroke-width: 1;'],
+        ['d', `M${indent} ${val * scaleY} H ${width - indent}`], ['style', 'stroke: #F2F4F5; fill: none; stroke-width: 2;'],
       ]);
       yAxisWrapper.append(path);
 
-      const text = dom('text', [['x', '5'], ['y', `-${val * scaleY + 5}`], ['transform', 'scale(1, -1)']]);
+      const text = dom('text', [
+        ['x', indent], ['y', `-${val * scaleY + 5}`], ['transform', 'scale(1, -1)'],
+        ['style', 'stroke: #96A2AA; font-family: sans-serif; stroke-width: 0; font-size: 18;'],
+      ]);
       text.el.innerHTML = `${val}`;
       yAxisWrapper.append(text);
 
@@ -200,15 +208,15 @@ window.Chart = function chart(target, width, height, chartData) {
   // reflow lines and navigator
   const updateNav = (selectedBlock) => {
     let rangeWidth = selectedRange.end - selectedRange.start;
-    if (selectedRange.start < 1) {
-      selectedRange.start = 1;
+    if (selectedRange.start < indent) {
+      selectedRange.start = indent;
       if (selectedBlock === 2) {
-        selectedRange.end = 1 + rangeWidth;
+        selectedRange.end = indent + rangeWidth;
       }
-    } else if (selectedRange.end > width) {
-      selectedRange.end = width;
+    } else if (selectedRange.end > width - indent) {
+      selectedRange.end = width - indent;
       if (selectedBlock === 2) {
-        selectedRange.start = width - rangeWidth;
+        selectedRange.start = width - rangeWidth - indent;
       }
     } else if (rangeWidth < 50) {
       if (selectedBlock === 1) {
@@ -222,14 +230,14 @@ window.Chart = function chart(target, width, height, chartData) {
       ['x', `${selectedRange.start + 5}`],
       ['width', `${selectedRange.end - selectedRange.start - 10}`],
     ]);
-    navBoxLeft.attrs([['transform', `translate(${-width + selectedRange.start}, 0)`]]);
-    navBoxRight.attrs([['transform', `translate(${selectedRange.end}, 0)`]]);
+    navBoxLeft.attrs([['width', selectedRange.start - indent]]);
+    navBoxRight.attrs([['x', selectedRange.end], ['width', width - indent - selectedRange.end]]);
 
     rangeWidth = selectedRange.end - selectedRange.start;
 
-    const scale = width / rangeWidth;
-    const startIndex = Math.floor(selectedRange.start / navScaleX);
-    const endIndex = Math.ceil(selectedRange.end / navScaleX);
+    const scale = (width - indent * 2) / rangeWidth;
+    const startIndex = Math.floor((selectedRange.start - indent) / navScaleX);
+    const endIndex = Math.ceil((selectedRange.end + indent) / navScaleX);
 
     maxY = 0;
 
@@ -243,14 +251,16 @@ window.Chart = function chart(target, width, height, chartData) {
       }
     });
 
-    const scaleX = width * scale / timeLine.length / timeLine.length * (timeLine.length + 1);
-    const scaleY = height / maxY;
+    const scaleX = (width - indent * 2) * scale / (timeLine.length ** 2) * (timeLine.length + 1);
+    const scaleY = (height - navHeight - xScaleHeight) / maxY;
 
-    const coord = selectedRange.start / scaleX;
+    const coord = (selectedRange.start - indent) / scaleX;
     const translateLeft = -coord * scale;
 
     for (let i = 0; i < lines.length; i += 1) {
-      lines[i].attrs([['transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft}, 0)`]]);
+      lines[i].attrs([
+        ['transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft + indent / scaleX}, ${(navHeight + xScaleHeight) / scaleY})`]
+      ]);
     }
 
     drawY(scaleY);
