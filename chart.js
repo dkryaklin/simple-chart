@@ -1,3 +1,18 @@
+// todos:
+// 1. fix height issues
+// 2. text styling
+// 3. less props for rects and others
+// 4. X inside lines
+// 5. touch events
+// 6. tooltip
+// 7. dark mode
+// 8. animation for y
+// 9. animation for x
+// 10. animation for lines
+// 11. api
+// 12. animation for nav
+// 13. constants outside
+
 window.Chart = function chart(target, width, height, chartData) {
   const doc = document;
   const dom = (tag, attrsList) => {
@@ -46,15 +61,7 @@ window.Chart = function chart(target, width, height, chartData) {
     return 0;
   };
 
-  const svg = dom('svg', [
-    ['width', `${width}`],
-    ['height', `${height}`],
-    ['transform', 'scale(1, -1)'],
-  ]);
-  target.appendChild(svg.el);
-
   let maxY = 0;
-  let scaleX;
   let lines = [];
   let timeLine;
   chartData.columns.forEach((column) => {
@@ -74,23 +81,26 @@ window.Chart = function chart(target, width, height, chartData) {
       lines.push({ data, path, color: chartData.colors[id] });
     } else {
       timeLine = data;
-      scaleX = width / data.length * (1 / data.length * (data.length + 1));
     }
   });
 
-  let scaleY = height / maxY;
+  const svg = dom('svg', [
+    ['width', `${width}`],
+    ['height', `${height}`],
+    ['transform', 'scale(1, -1)'],
+  ]);
+  target.appendChild(svg.el);
 
   const linesWrapper = dom('g');
-  svg.append(linesWrapper.el);
   lines = lines.map((line) => {
     const lineEl = dom('path', [
       ['d', line.path],
       ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
-      ['transform', `scale(${scaleX}, ${scaleY})`],
     ]);
     linesWrapper.append(lineEl.el);
     return { ...line, ...lineEl };
   });
+  svg.append(linesWrapper.el);
 
   const navigatorWrapper = dom('g');
 
@@ -101,7 +111,7 @@ window.Chart = function chart(target, width, height, chartData) {
   let navClickX;
 
   let selectedNavBlock;
-  const selectedRange = { start: 100, end: 200 };
+  const selectedRange = { start: width - width / 5, end: width };
 
   const navBoxBack = dom('rect', [
     ['x', '0'],
@@ -178,15 +188,14 @@ window.Chart = function chart(target, width, height, chartData) {
   });
 
   let xAxisWrapper = {};
-  const drawX = () => {
+  const drawX = (scaleX) => {
     svg.remove(xAxisWrapper.el);
-    xAxisWrapper = dom('g');
 
     const rangeWidth = selectedRange.end - selectedRange.start;
     const scale = width / rangeWidth;
     const translateLeft = (selectedRange.start - 1) * scale;
 
-    xAxisWrapper.attrs([['transform', `translate(-${translateLeft}, 0)`]]);
+    xAxisWrapper = dom('g', [['transform', `translate(-${translateLeft}, 0)`]]);
 
     let prevX = 0;
     for (let i = 0; i < timeLine.length; i += 1) {
@@ -213,7 +222,7 @@ window.Chart = function chart(target, width, height, chartData) {
   };
 
   let yAxisWrapper = {};
-  const drawY = () => {
+  const drawY = (scaleY) => {
     svg.remove(yAxisWrapper.el);
     yAxisWrapper = dom('g');
 
@@ -289,19 +298,18 @@ window.Chart = function chart(target, width, height, chartData) {
       }
     });
 
-    scaleX = width * scale;
-    scaleX = scaleX / timeLine.length / timeLine.length * (timeLine.length + 1);
+    const scaleX = width * scale / timeLine.length / timeLine.length * (timeLine.length + 1);
+    const scaleY = height / maxY;
 
     const coord = selectedRange.start / scaleX;
     const translateLeft = -coord * scale;
-    scaleY = height / maxY;
 
     for (let i = 0; i < lines.length; i += 1) {
       lines[i].attrs([['transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft}, 0)`]]);
     }
 
-    drawY();
-    drawX();
+    drawY(scaleY);
+    drawX(scaleX);
   };
 
   document.addEventListener('mousemove', (env) => {
