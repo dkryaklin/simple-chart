@@ -52,7 +52,10 @@ export default class Chart {
   animRequest: number;
   lines: any[] = [];
 
+  xG: any;
   yG: any;
+  chartsG: any;
+  scale: number;
 
   constructor(props: ChartProps, data: ChartData) {
     this.target = props.target;
@@ -105,14 +108,13 @@ export default class Chart {
 
     this.scaleY = props.height / (this.max - this.min);
 
-    this.drawY();
+    // this.drawY();
 
     for (let id in data.types) {
       if (data.types[id] === 'line') {
         this.drawLine(id, data.names[id], data.colors[id]);
       }
     }
-
     this.drawNavigator();
     this.updateNav('');
   }
@@ -129,6 +131,51 @@ export default class Chart {
     path.setAttribute('transform', `scale(${this.scaleX}, ${this.scaleY})`);
     this.lines.push(path);
     this.svg.appendChild(path);
+  }
+
+  drawX() {
+    if (this.xG) {
+      this.svg.removeChild(this.xG);
+    }
+    this.xG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    let column = this.data.columns.filter((column: (string | number)[]) => column[0] === 'x')[0];
+
+    // let coord =;
+    console.log(this.selectedRange.start);
+    let translateLeft = (this.selectedRange.start - 1) * this.scale;
+    this.xG.setAttribute('transform', `translate(-${translateLeft}, 0)`);
+    // console.log(translateLeft * scale);
+    let prevX;
+    for (let i = 1; i < column.length; i += 1) {
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      let x = (i - 1) * this.scaleX; // + translateLeft;
+      if (i !== 1) {
+
+        if (x - prevX < 50) {
+          continue;
+        }
+      }
+      // console.log(x);
+      prevX = x;
+      // console.log(translateLeft * this.scaleX);
+      if (x + 50 < translateLeft || x - 50 > this.props.width + translateLeft) {
+        continue;
+      }
+      // console.log(x)
+      text.setAttribute('x', `${x}`);
+      text.setAttribute('y', '0');
+      text.setAttribute('transform', `scale(1, -1)`);
+
+      let date = new Date(column[i]);
+      let texts = `${date.toLocaleString('en-us', { month: 'short' })} ${date.getDate()}`;
+      // console.log(texts);
+      text.innerHTML = texts;
+
+      this.xG.appendChild(text);
+    }
+
+    this.svg.appendChild(this.xG);
   }
 
   drawY() {
@@ -169,8 +216,6 @@ export default class Chart {
 
     this.svg.insertBefore(this.yG, this.lines[0]);
   }
-  
-  drawX() {}
 
   drawNavigator() {
     this.navScaleX = this.scaleX;
@@ -374,7 +419,7 @@ export default class Chart {
     // width 
     width = this.selectedRange.end - this.selectedRange.start;
 
-    let scale = this.props.width / width;
+    this.scale = this.props.width / width;
     // console.log(scale);
     let startIndex = Math.floor(this.selectedRange.start / this.navScaleX);
     let endIndex = Math.ceil(this.selectedRange.end / this.navScaleX);
@@ -403,7 +448,7 @@ export default class Chart {
           }
         }
       } else {
-        this.scaleX = this.props.width * scale / (column.length - 1) / (column.length - 1) * column.length;
+        this.scaleX = this.props.width * this.scale / (column.length - 1) / (column.length - 1) * column.length;
       }
 
     }
@@ -415,7 +460,8 @@ export default class Chart {
     // console.log(max);
 
     let coord = this.selectedRange.start / this.scaleX;
-    let translateLeft = -coord * scale;
+    let translateLeft = -coord * this.scale;
+    // console.log(translateLeft);
     this.scaleY = this.props.height / (this.max - this.min);
     // console.log(max);
 
@@ -427,6 +473,7 @@ export default class Chart {
     }
 
     this.drawY();
+    this.drawX();
     // console.log(scaleY);
   }
 
@@ -447,7 +494,7 @@ export default class Chart {
 }
 
 const chart0 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[0]);
-const chart1 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[1]);
-const chart2 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[2]);
-const chart3 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[3]);
-const chart4 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[4]);
+// const chart1 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[1]);
+// const chart2 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[2]);
+// const chart3 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[3]);
+// const chart4 = new Chart({targetSelector: 'body', width: 500, height: 300}, charts[4]);
