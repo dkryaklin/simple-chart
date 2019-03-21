@@ -2,7 +2,6 @@
 // 5. touch events
 // 6. tooltip
 // 7. dark mode
-// 8. animation for y
 // 9. animation for x
 // 10. animation for lines
 // 11. api
@@ -176,33 +175,97 @@ window.Chart = function chart(target, width, height, chartData) {
     svg.append(xAxisWrapper);
   };
 
-  // draw y axis
-  let yAxisWrapper = {};
-  const drawY = (scaleY) => {
-    svg.remove(yAxisWrapper);
-    yAxisWrapper = dom('g', [['transform', `translate(0, ${navHeight + xScaleHeight})`]]);
+  const yAxisLineStyle = ['style', 'stroke: #F2F4F5; fill: none; stroke-width: 2;'];
+  const yAxisTextStyle = ['style', 'stroke: #96A2AA; font-family: sans-serif; stroke-width: 0; font-size: 18;'];
+  const wrapperAttrs = [
+    ['transform', `translate(0, ${navHeight + xScaleHeight})`],
+    ['style', 'transition: 0.2s transform, 0.2s opacity;'],
+  ];
 
+  // draw 0 y axis point
+  const yAxisBottomWrapper = dom('g', wrapperAttrs);
+  const yAxisBottomPath = dom('path', [['d', `M${indent} 0 H ${width - indent}`], yAxisLineStyle]);
+  const yAxisBottomText = dom('text', [['x', indent], ['y', '-5'], ['transform', 'scale(1, -1)'], yAxisTextStyle]);
+
+  yAxisBottomText.el.innerHTML = 0;
+
+  yAxisBottomWrapper.append(yAxisBottomPath);
+  yAxisBottomWrapper.append(yAxisBottomText);
+  svg.append(yAxisBottomWrapper);
+
+  // draw y axis
+  let yAxisWrapper;
+  let hiddenYAxisWrapperUp;
+  let hiddenYAxisWrapperDown;
+
+  let prevRound;
+  let animTimeout;
+  const drawY = (scaleY) => {
     const linesAmount = 6;
     const round = Math.floor(maxY / linesAmount);
 
-    let val = 0;
-    for (let i = 0; i < linesAmount; i += 1) {
-      const path = dom('path', [
-        ['d', `M${indent} ${val * scaleY} H ${width - indent}`], ['style', 'stroke: #F2F4F5; fill: none; stroke-width: 2;'],
+    if (!hiddenYAxisWrapperUp) {
+      hiddenYAxisWrapperUp = dom('g', [
+        ...wrapperAttrs,
+        ['transform', `translate(0, ${navHeight + xScaleHeight - 100})`], ['opacity', 0],
       ]);
-      yAxisWrapper.append(path);
+      hiddenYAxisWrapperDown = dom('g', [
+        ...wrapperAttrs,
+        ['transform', `translate(0, ${navHeight + xScaleHeight + 100})`],
+        ['opacity', 0],
+      ]);
+    }
 
-      const text = dom('text', [
-        ['x', indent], ['y', `-${val * scaleY + 5}`], ['transform', 'scale(1, -1)'],
-        ['style', 'stroke: #96A2AA; font-family: sans-serif; stroke-width: 0; font-size: 18;'],
-      ]);
+    let val = round;
+    hiddenYAxisWrapperUp.el.innerHTML = null;
+    for (let i = 1; i < linesAmount; i += 1) {
+      const path = dom('path', [['d', `M${indent} ${val * scaleY} H ${width - indent}`], yAxisLineStyle]);
+      hiddenYAxisWrapperUp.append(path);
+
+      const text = dom('text', [['x', indent], ['y', `-${val * scaleY + 5}`], ['transform', 'scale(1, -1)'], yAxisTextStyle]);
       text.el.innerHTML = `${val}`;
-      yAxisWrapper.append(text);
+      hiddenYAxisWrapperUp.append(text);
 
       val += round;
     }
 
-    svg.append(yAxisWrapper, linesWrapper);
+    hiddenYAxisWrapperDown.el.innerHTML = hiddenYAxisWrapperUp.el.innerHTML;
+
+    svg.append(hiddenYAxisWrapperUp, linesWrapper);
+    svg.append(hiddenYAxisWrapperDown, linesWrapper);
+
+    if (!prevRound) {
+      yAxisWrapper = dom('g', wrapperAttrs);
+      yAxisWrapper.el.innerHTML = hiddenYAxisWrapperUp.el.innerHTML;
+      svg.append(yAxisWrapper, linesWrapper);
+      prevRound = round;
+      return;
+    }
+
+    clearTimeout(animTimeout);
+    animTimeout = setTimeout(() => {
+      if (prevRound === round) {
+        return;
+      }
+
+      (yAxisWrapperDep => setTimeout(() => svg.remove(yAxisWrapperDep), 300))(yAxisWrapper);
+      if (prevRound > round) {
+        yAxisWrapper.attrs([['transform', `translate(0, ${navHeight + xScaleHeight + 100})`], ['opacity', 0]]);
+        hiddenYAxisWrapperUp.attrs([['transform', `translate(0, ${navHeight + xScaleHeight})`], ['opacity', 1]]);
+        yAxisWrapper = hiddenYAxisWrapperUp;
+        svg.remove(hiddenYAxisWrapperDown);
+      } else {
+        yAxisWrapper.attrs([['transform', `translate(0, ${navHeight + xScaleHeight - 100})`], ['opacity', 0]]);
+        hiddenYAxisWrapperDown.attrs([['transform', `translate(0, ${navHeight + xScaleHeight})`], ['opacity', 1]]);
+        yAxisWrapper = hiddenYAxisWrapperDown;
+        svg.remove(hiddenYAxisWrapperUp);
+      }
+
+      hiddenYAxisWrapperDown = null;
+      hiddenYAxisWrapperUp = null;
+
+      prevRound = round;
+    }, 200);
   };
 
   // reflow lines and navigator
@@ -237,7 +300,7 @@ window.Chart = function chart(target, width, height, chartData) {
 
     const scale = (width - indent * 2) / rangeWidth;
     const startIndex = Math.floor((selectedRange.start - indent) / navScaleX);
-    const endIndex = Math.ceil((selectedRange.end + indent) / navScaleX);
+    const endIndex = Math.ceil((selectedRange.end - indent) / navScaleX);
 
     maxY = 0;
 
@@ -259,7 +322,7 @@ window.Chart = function chart(target, width, height, chartData) {
 
     for (let i = 0; i < lines.length; i += 1) {
       lines[i].attrs([
-        ['transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft + indent / scaleX}, ${(navHeight + xScaleHeight) / scaleY})`]
+        ['transform', `scale(${scaleX}, ${scaleY}) translate(${translateLeft + indent / scaleX}, ${(navHeight + xScaleHeight) / scaleY})`],
       ]);
     }
 
