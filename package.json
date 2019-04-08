@@ -1,7 +1,6 @@
 {
   "scripts": {
-    "dev": "parcel index.html",
-    "build": "parcel index.js"
+    "start": "parcel ./src/index.html"
   },
   "devDependencies": {
     "eslint": "^5.15.1",
