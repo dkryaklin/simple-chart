@@ -112,6 +112,30 @@ class Chart {
     this.el = el;
     this.data = data;
 
+    let maxY = 0;
+    let lines = [];
+    let timeLine;
+    // search maxY in all data and set data for lines and datetime
+    data.columns.forEach((column) => {
+      const id = column[0];
+      const columnData = [...column];
+      columnData.shift();
+
+      if (data.types[id] === 'line') {
+        let path = `M0 ${data[0]}`;
+        for (let i = 1; i < data.length; i += 1) {
+          path += ` L ${i} ${data[i]}`;
+
+          if (maxY < data[i]) {
+            maxY = data[i];
+          }
+        }
+        lines.push({ data, path, color: data.colors[id] });
+      } else {
+        timeLine = data;
+      }
+    });
+
     this.render();
   }
 
@@ -125,6 +149,16 @@ class Chart {
     ];
 
     this.svg = new DomHelper('svg', [['style', styles]]);
+
+    const linesWrapper = DomHelper('g', [['class', 'lines']]);
+    lines = lines.map((line) => {
+      const lineEl = dom('path', [
+        ['d', line.path],
+        ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
+      ]);
+      return { ...line, ...lineEl };
+    });
+
 
     this.el.appendChild(this.svg.el);
   }
