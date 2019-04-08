@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable object-curly-newline */
+
 // todos:
 // 5. touch events
 // 6. tooltip
@@ -52,10 +55,26 @@ class DomHelper {
 
 class StateHelper {
   constructor(state) {
+    this.constants = {
+      chartIndent: 16,
+      xScaleHeight: 35,
+      navHeight: 40,
+      navInnerHeight: 38,
+      navOvalWidth: 2,
+      navOvalHeight: 10,
+      navOvalRadius: 2,
+      navRadius: 5,
+      navBackOpacity: 0.6,
+      navLineStroke: 2,
+      navBackColor: '#C0D1E1',
+    };
+
     const defaultState = {
       isNightMode: false,
       width: 500,
       height: 500,
+      startRange: 0,
+      endRange: 50,
     };
 
     this.state = { ...defaultState, ...state };
@@ -72,10 +91,6 @@ class StateHelper {
         });
       }
     });
-  }
-
-  getState() {
-    return this.state;
   }
 
   stateSubscribe(fields, callback) {
@@ -99,7 +114,7 @@ class DataHelper {
   }
 
   fetchOverview() {
-    return fetch(`${this.dataUrl}/overview.json`).then(response => response.text());
+    return fetch(`${this.dataUrl}/overview.json`).then(response => response.json());
   }
 
   fetchDay() {
@@ -107,8 +122,249 @@ class DataHelper {
   }
 }
 
-// class LineChart {}
-// class Navigator {}
+class LineChart {
+  constructor(lineChartData, stateHelper) {
+    this.lineChartData = lineChartData;
+    this.stateHelper = stateHelper;
+
+    this.lineEls = {};
+
+    this.render();
+  }
+
+  render() {
+    this.el = new DomHelper('g', [['class', 'lines']]);
+
+    this.lineChartData.forEach((lineChart) => {
+      const lineStyle = [
+        ['vector-effect', 'non-scaling-stroke'],
+        ['fill', 'none'],
+        ['stroke-width', 2],
+        ['stroke', lineChart.color],
+      ];
+
+      const lineEl = new DomHelper('path', [
+        ['d', lineChart.path],
+        ['style', lineStyle],
+      ]);
+
+      this.lineEls[lineChart.id] = {
+        lineEl,
+        ...lineChart,
+      };
+
+      this.el.appendChild(lineEl);
+    });
+  }
+
+  // update() {
+
+  // }
+
+  // clear() {
+
+  // }
+
+  // destroy() {
+
+  // }
+}
+
+// class NavigatorLine {
+//   constructor(lineChart, timeLine, stateHelper, width, height, scaleX, scaleY) {
+//     this.lineChart = lineChart;
+//     this.stateHelper = stateHelper;
+//     this.timeLine = timeLine;
+//     this.maxValue = maxValue;
+//     this.rangeWidth = rangeWidth;
+//     this.width = width;
+//     this.height = height;
+
+//     this.render();
+//   }
+
+//   render() {
+//     debugger
+//     const { startRange } = this.stateHelper.state;
+//     const { chartIndent, navigatorHeight, xScaleHeight } = this.stateHelper.constants;
+//     const { navLineStroke } = this.stateHelper.styles;
+
+//     const scale = (this.width - chartIndent * 2) / this.rangeWidth;
+
+//     const scaleX = (this.width - chartIndent * 2) * scale / (this.timeLine.length ** 2) * (this.timeLine.length + 1);
+//     const scaleY = (this.height - navigatorHeight - xScaleHeight) / this.maxValue;
+
+//     const coord = (startRange - chartIndent) / scaleX;
+//     const translateLeft = -coord * scale;
+//   }
+// }
+
+class Navigator {
+  constructor(lineChartData, timeLine, stateHelper) {
+    this.lineChartData = lineChartData;
+    this.stateHelper = stateHelper;
+    this.timeLine = timeLine;
+
+    this.lineEls = {};
+    this.lineInnerEls = {};
+
+    this.render();
+  }
+
+  renderLine(lineChart, maxValue) {
+    const { width } = this.stateHelper.state;
+    const { chartIndent, navInnerHeight, navHeight, navLineStroke } = this.stateHelper.constants;
+
+    const scaleX = (width - chartIndent * 2) * (1 + 1 / (1 + this.timeLine.length)) / this.timeLine.length;
+    const scaleY = navInnerHeight / maxValue;
+
+    const lineStyle = [
+      ['vector-effect', 'non-scaling-stroke'],
+      ['fill', 'none'],
+      ['stroke-width', navLineStroke],
+      ['stroke', lineChart.color],
+    ];
+
+    const el = new DomHelper('path', [
+      ['d', lineChart.path],
+      ['style', lineStyle],
+      ['transform', `scale(${scaleX}, ${scaleY}) translate(${chartIndent / scaleX},${(navHeight - navInnerHeight) / 2 / scaleY})`],
+    ]);
+
+    return el;
+  }
+
+  render() {
+    const { width } = this.stateHelper.state;
+    const {
+      chartIndent,
+      navHeight,
+      navInnerHeight,
+      navBackColor,
+      navBackOpacity,
+      navRadius,
+      navOvalWidth,
+      navOvalHeight,
+      navOvalRadius,
+    } = this.stateHelper.constants;
+
+    const maxLineHeight = Math.max(...this.lineChartData.map(lineChart => lineChart.maxValue));
+
+    this.el = new DomHelper('g', [['class', 'navigator']]);
+
+    this.lineChartData.forEach((lineChart) => {
+      const lineEl = this.renderLine(lineChart, maxLineHeight);
+      this.lineEls[lineChart.id] = {
+        lineEl,
+        ...lineChart,
+      };
+
+      this.el.appendChild(lineEl);
+    });
+
+    this.backEl = new DomHelper('rect', [
+      ['x', chartIndent - 1],
+      ['y', (navHeight - navInnerHeight) / 2],
+      ['rx', navRadius],
+      ['ry', navRadius],
+      ['style', [
+        ['width', width - chartIndent * 2 + 2],
+        ['height', navInnerHeight],
+        ['fill', navBackColor],
+        ['opacity', navBackOpacity],
+      ]],
+    ]);
+    this.el.appendChild(this.backEl);
+
+    this.selectorEl = new DomHelper('rect', [
+      ['x', 100],
+      ['y', 0],
+      ['rx', navRadius],
+      ['ry', navRadius],
+      ['style', [
+        ['width', 200],
+        ['height', navHeight],
+        ['fill', '#C0D1E1'],
+        ['cursor', 'pointer'],
+      ]],
+    ]);
+    this.el.appendChild(this.selectorEl);
+
+    this.whiteEl = new DomHelper('rect', [
+      ['x', 100 + 10],
+      ['y', (navHeight - navInnerHeight) / 2],
+      ['style', [
+        ['width', 200 - 20],
+        ['height', navInnerHeight],
+        ['fill', '#fff'],
+        ['pointer-events', 'none'],
+      ]],
+    ]);
+    this.el.appendChild(this.whiteEl);
+
+    this.defsEl = new DomHelper('defs');
+    this.clipPathEl = new DomHelper('clipPath', [['id', 'lineInner']]);
+    this.clipRectEl = new DomHelper('rect', [
+      ['x', 100 + 10],
+      ['y', (navHeight - navInnerHeight) / 2],
+      ['style', [
+        ['width', 200 - 20],
+        ['height', navInnerHeight],
+      ]],
+    ]);
+    this.clipPathEl.appendChild(this.clipRectEl);
+    this.defsEl.appendChild(this.clipPathEl);
+    this.el.appendChild(this.defsEl);
+
+    this.lineInnerWrapperEl = new DomHelper('g', [
+      ['class', 'lines-inner'],
+      ['clip-path', 'url(#lineInner)'],
+      ['style', [
+        ['width', 200 - 20],
+        ['pointer-events', 'none'],
+      ]],
+    ]);
+    this.lineChartData.forEach((lineChart) => {
+      const lineEl = this.renderLine(lineChart, maxLineHeight);
+      this.lineInnerEls[lineChart.id] = {
+        lineEl,
+        ...lineChart,
+      };
+
+      this.lineInnerWrapperEl.appendChild(lineEl);
+    });
+    this.el.appendChild(this.lineInnerWrapperEl);
+
+    this.whiteOvalLeftEl = new DomHelper('rect', [
+      ['x', 100 + (10 - navOvalWidth) / 2],
+      ['y', (navHeight - navInnerHeight + navInnerHeight - navOvalHeight) / 2],
+      ['rx', navOvalRadius],
+      ['ry', navOvalRadius],
+      ['style', [
+        ['width', navOvalWidth],
+        ['height', navOvalHeight],
+        ['fill', '#fff'],
+        ['pointer-events', 'none'],
+      ]],
+    ]);
+    this.el.appendChild(this.whiteOvalLeftEl);
+
+    this.whiteOvalRightEl = new DomHelper('rect', [
+      ['x', 100 + (10 - navOvalWidth) / 2 + 200 - 10],
+      ['y', (navHeight - navInnerHeight + navInnerHeight - navOvalHeight) / 2],
+      ['rx', navOvalRadius],
+      ['ry', navOvalRadius],
+      ['style', [
+        ['width', navOvalWidth],
+        ['height', navOvalHeight],
+        ['fill', '#fff'],
+        ['pointer-events', 'none'],
+      ]],
+    ]);
+    this.el.appendChild(this.whiteOvalRightEl);
+  }
+}
+
 // class AxisY {}
 // class AxisX {}
 // class Tooltip {}
@@ -118,46 +374,113 @@ class DataHelper {
 // class LegendSwitchers {}
 
 class Chart {
-  constructor(el, width, height, dataUrl) {
+  constructor(target, width, height, dataUrl) {
     this.stateHelper = new StateHelper({ width, height });
 
     this.dataHelper = new DataHelper(dataUrl);
-    this.dataHelper.fetchOverview().then(result => console.log(result));
+    this.dataHelper.fetchOverview().then((data) => {
+      console.log(data);
+      this.data = data;
+      this.render();
+    });
+
     // this.statePropsHelper.stateSubscribe(['isOpen'], this.update);
     // this.statePropsHelper.stateSubscribe(['inputValue'], this.updateExtraItems);
 
-    this.el = el;
-    // this.data = data;
+    this.target = target;
 
-    // let maxY = 0;
-    // let lines = [];
-    // let timeLine;
-    // // search maxY in all data and set data for lines and datetime
-    // data.columns.forEach((column) => {
-    //   const id = column[0];
-    //   const columnData = [...column];
-    //   columnData.shift();
+    this.lineChartData = [];
+    this.barChartData = [];
+    this.areaChartData = [];
 
-    //   if (data.types[id] === 'line') {
-    //     let path = `M0 ${data[0]}`;
-    //     for (let i = 1; i < data.length; i += 1) {
-    //       path += ` L ${i} ${data[i]}`;
+    this.timeLine = [];
+  }
 
-    //       if (maxY < data[i]) {
-    //         maxY = data[i];
-    //       }
-    //     }
-    //     lines.push({ data, path, color: data.colors[id] });
-    //   } else {
-    //     timeLine = data;
-    //   }
-    // });
+  processData() {
+    this.data.columns.forEach((column) => {
+      const id = column[0];
+      const columnData = [...column];
+      columnData.shift();
 
-    this.render();
+      if (this.data.types[id] === 'line') {
+        this.processLineChart(id, this.data.names[id], this.data.colors[id], columnData);
+      } else if (this.data.types[id] === 'bar') {
+        this.processBarChart(id, this.data.names[id], this.data.colors[id], columnData);
+      } else if (this.data.types[id] === 'area') {
+        this.processAreaChart(id, this.data.names[id], this.data.colors[id], columnData);
+      } else {
+        this.timeLine = columnData;
+      }
+    });
+  }
+
+  processLineChart(id, name, color, columnData) {
+    let maxValue = 0;
+    let path = `M0 ${columnData[0]}`;
+
+    for (let i = 1; i < columnData.length; i += 1) {
+      path += ` L ${i} ${columnData[i]}`;
+
+      if (maxValue < columnData[i]) {
+        maxValue = columnData[i];
+      }
+    }
+
+    this.lineChartData.push({
+      id,
+      name,
+      color,
+      path,
+      maxValue,
+    });
+  }
+
+  processBarChart(id, name, color, columnData) {
+    let maxValue = 0;
+    let path = `M0 ${columnData[0]}`;
+
+    for (let i = 1; i < columnData.length; i += 1) {
+      path += ` L ${i} ${columnData[i]}`;
+
+      if (maxValue < columnData[i]) {
+        maxValue = columnData[i];
+      }
+    }
+
+    this.lineChartData.push({
+      id,
+      name,
+      color,
+      path,
+      maxValue,
+    });
+  }
+
+  processAreaChart(id, name, color, columnData) {
+    let maxValue = 0;
+    let path = `M0 ${columnData[0]}`;
+
+    for (let i = 1; i < columnData.length; i += 1) {
+      path += ` L ${i} ${columnData[i]}`;
+
+      if (maxValue < columnData[i]) {
+        maxValue = columnData[i];
+      }
+    }
+
+    this.lineChartData.push({
+      id,
+      name,
+      color,
+      path,
+      maxValue,
+    });
   }
 
   render() {
-    const { width, height } = this.stateHelper.getState();
+    this.processData();
+    console.log(this.lineChartData);
+    const { width, height } = this.stateHelper.state;
 
     const styles = [
       ['width', width],
@@ -165,19 +488,17 @@ class Chart {
       ['transform', 'scale(1, -1)'],
     ];
 
-    this.svg = new DomHelper('svg', [['style', styles]]);
+    this.el = new DomHelper('svg', [['style', styles]]);
 
-    // const linesWrapper = DomHelper('g', [['class', 'lines']]);
-    // lines = lines.map((line) => {
-    //   const lineEl = dom('path', [
-    //     ['d', line.path],
-    //     ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
-    //   ]);
-    //   return { ...line, ...lineEl };
-    // });
+    if (this.lineChartData.length) {
+      this.lineChart = new LineChart(this.lineChartData, this.stateHelper);
+      this.el.appendChild(this.lineChart.el);
+    }
 
+    this.navigator = new Navigator(this.lineChartData, this.timeLine, this.stateHelper);
+    this.el.appendChild(this.navigator.el);
 
-    this.el.appendChild(this.svg.el);
+    this.target.appendChild(this.el.el);
   }
 
   // update() {
