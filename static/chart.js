@@ -93,6 +93,20 @@ class StateHelper {
   }
 }
 
+class DataHelper {
+  constructor(dataUrl) {
+    this.dataUrl = dataUrl;
+  }
+
+  fetchOverview() {
+    return fetch(`${this.dataUrl}/overview.json`).then(response => response.text());
+  }
+
+  fetchDay() {
+    return fetch(`${this.dataUrl}/overview.json`).then(response => response.json());
+  }
+}
+
 // class LineChart {}
 // class Navigator {}
 // class AxisY {}
@@ -104,37 +118,40 @@ class StateHelper {
 // class LegendSwitchers {}
 
 class Chart {
-  constructor(el, width, height, data) {
+  constructor(el, width, height, dataUrl) {
     this.stateHelper = new StateHelper({ width, height });
+
+    this.dataHelper = new DataHelper(dataUrl);
+    this.dataHelper.fetchOverview().then(result => console.log(result));
     // this.statePropsHelper.stateSubscribe(['isOpen'], this.update);
     // this.statePropsHelper.stateSubscribe(['inputValue'], this.updateExtraItems);
 
     this.el = el;
-    this.data = data;
+    // this.data = data;
 
-    let maxY = 0;
-    let lines = [];
-    let timeLine;
-    // search maxY in all data and set data for lines and datetime
-    data.columns.forEach((column) => {
-      const id = column[0];
-      const columnData = [...column];
-      columnData.shift();
+    // let maxY = 0;
+    // let lines = [];
+    // let timeLine;
+    // // search maxY in all data and set data for lines and datetime
+    // data.columns.forEach((column) => {
+    //   const id = column[0];
+    //   const columnData = [...column];
+    //   columnData.shift();
 
-      if (data.types[id] === 'line') {
-        let path = `M0 ${data[0]}`;
-        for (let i = 1; i < data.length; i += 1) {
-          path += ` L ${i} ${data[i]}`;
+    //   if (data.types[id] === 'line') {
+    //     let path = `M0 ${data[0]}`;
+    //     for (let i = 1; i < data.length; i += 1) {
+    //       path += ` L ${i} ${data[i]}`;
 
-          if (maxY < data[i]) {
-            maxY = data[i];
-          }
-        }
-        lines.push({ data, path, color: data.colors[id] });
-      } else {
-        timeLine = data;
-      }
-    });
+    //       if (maxY < data[i]) {
+    //         maxY = data[i];
+    //       }
+    //     }
+    //     lines.push({ data, path, color: data.colors[id] });
+    //   } else {
+    //     timeLine = data;
+    //   }
+    // });
 
     this.render();
   }
@@ -150,14 +167,14 @@ class Chart {
 
     this.svg = new DomHelper('svg', [['style', styles]]);
 
-    const linesWrapper = DomHelper('g', [['class', 'lines']]);
-    lines = lines.map((line) => {
-      const lineEl = dom('path', [
-        ['d', line.path],
-        ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
-      ]);
-      return { ...line, ...lineEl };
-    });
+    // const linesWrapper = DomHelper('g', [['class', 'lines']]);
+    // lines = lines.map((line) => {
+    //   const lineEl = dom('path', [
+    //     ['d', line.path],
+    //     ['style', `vector-effect: non-scaling-stroke; fill: none; stroke-width: 2; stroke: ${line.color};`],
+    //   ]);
+    //   return { ...line, ...lineEl };
+    // });
 
 
     this.el.appendChild(this.svg.el);
