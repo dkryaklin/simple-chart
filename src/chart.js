@@ -200,32 +200,73 @@ class LineChart {
 // }
 
 class Navigator {
-  constructor(lineChartData, timeLine, stateHelper) {
-    this.lineChartData = lineChartData;
+  constructor(chartData, timeLine, stateHelper, data) {
+    this.chartData = chartData;
     this.stateHelper = stateHelper;
     this.timeLine = timeLine;
+    this.data = data;
+    // this.barChartData = barChartData;
+    // this.areaChartData = areaChartData;
 
     this.lineEls = {};
     this.lineInnerEls = {};
+
+    this.barEls = {};
 
     this.render();
   }
 
   renderLine(lineChart, maxValue) {
     const { width } = this.stateHelper.state;
-    const { chartIndent, navInnerHeight, navHeight, navLineStroke } = this.stateHelper.constants;
+    const { chartIndent, navInnerHeight, navHeight, navLineStroke, navRadius } = this.stateHelper.constants;
+
+    const scaleX = (width - chartIndent * 2) * (1 + 1 / (1 + this.timeLine.length)) / this.timeLine.length;
+    const scaleY = navInnerHeight / maxValue;
+
+    if (this.data.percentage) {
+      console.log('calculate percentage');
+    }
+
+    const lineStyle = [
+      ['vector-effect', 'non-scaling-stroke'],
+      ['stroke-width', navLineStroke],
+      ['stroke', lineChart.color],
+    ];
+
+    if (lineChart.type === 'area') {
+      lineStyle.push(['fill', lineChart.color]);
+    } else {
+      lineStyle.push(['fill', 'none']);
+    }
+
+    const el = new DomHelper('path', [
+      ['rx', navRadius],
+      ['ry', navRadius],
+      ['d', lineChart.path],
+      ['style', lineStyle],
+      ['transform', `scale(${scaleX}, ${scaleY}) translate(${chartIndent / scaleX},${(navHeight - navInnerHeight) / 2 / scaleY})`],
+    ]);
+
+    return el;
+  }
+
+  renderBar(lineChart, maxValue) {
+    const { width } = this.stateHelper.state;
+    const { chartIndent, navInnerHeight, navHeight, navLineStroke, navRadius } = this.stateHelper.constants;
 
     const scaleX = (width - chartIndent * 2) * (1 + 1 / (1 + this.timeLine.length)) / this.timeLine.length;
     const scaleY = navInnerHeight / maxValue;
 
     const lineStyle = [
       ['vector-effect', 'non-scaling-stroke'],
-      ['fill', 'none'],
+      ['fill', lineChart.color],
       ['stroke-width', navLineStroke],
       ['stroke', lineChart.color],
     ];
 
     const el = new DomHelper('path', [
+      ['rx', navRadius],
+      ['ry', navRadius],
       ['d', lineChart.path],
       ['style', lineStyle],
       ['transform', `scale(${scaleX}, ${scaleY}) translate(${chartIndent / scaleX},${(navHeight - navInnerHeight) / 2 / scaleY})`],
@@ -248,19 +289,64 @@ class Navigator {
       navOvalRadius,
     } = this.stateHelper.constants;
 
-    const maxLineHeight = Math.max(...this.lineChartData.map(lineChart => lineChart.maxValue));
-
     this.el = new DomHelper('g', [['class', 'navigator']]);
 
-    this.lineChartData.forEach((lineChart) => {
-      const lineEl = this.renderLine(lineChart, maxLineHeight);
+    this.defsEl = new DomHelper('defs');
+
+    this.clipPathRectEl = new DomHelper('clipPath', [['id', 'lineInner']]);
+    this.clipRectEl = new DomHelper('rect', [
+      ['x', 100 + 10],
+      ['y', (navHeight - navInnerHeight) / 2],
+      ['style', [
+        ['width', 200 - 20],
+        ['height', navInnerHeight],
+      ]],
+    ]);
+    this.clipPathRectEl.appendChild(this.clipRectEl);
+    this.defsEl.appendChild(this.clipPathRectEl);
+
+    this.clipPathBackEl = new DomHelper('clipPath', [['id', 'line']]);
+    this.clipBackEl = new DomHelper('rect', [
+      ['x', chartIndent - 1],
+      ['y', (navHeight - navInnerHeight) / 2],
+      ['rx', navRadius],
+      ['ry', navRadius],
+      ['style', [
+        ['width', width - chartIndent * 2 + 2],
+        ['height', navInnerHeight],
+      ]],
+    ]);
+    this.clipPathBackEl.appendChild(this.clipBackEl);
+    this.defsEl.appendChild(this.clipPathBackEl);
+
+    this.el.appendChild(this.defsEl);
+
+    let maxLineHeight;
+    if (!this.data.y_scaled) {
+      maxLineHeight = Math.max(...this.chartData.map(lineChart => lineChart.maxValue));
+    }
+
+    this.linesEl = new DomHelper('g', [['clip-path', 'url(#line)']]);
+
+    for (let i = this.chartData.length - 1; i >= 0; i -= 1) {
+      const lineChart = this.chartData[i];
+
+      let lineEl;
+      if (lineChart.type === 'bar') {
+        lineEl = this.renderBar(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
+      } else {
+        lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
+      }
+
       this.lineEls[lineChart.id] = {
         lineEl,
         ...lineChart,
       };
 
-      this.el.appendChild(lineEl);
-    });
+      this.linesEl.appendChild(lineEl);
+    }
+
+    this.el.appendChild(this.linesEl);
 
     this.backEl = new DomHelper('rect', [
       ['x', chartIndent - 1],
@@ -302,20 +388,6 @@ class Navigator {
     ]);
     this.el.appendChild(this.whiteEl);
 
-    this.defsEl = new DomHelper('defs');
-    this.clipPathEl = new DomHelper('clipPath', [['id', 'lineInner']]);
-    this.clipRectEl = new DomHelper('rect', [
-      ['x', 100 + 10],
-      ['y', (navHeight - navInnerHeight) / 2],
-      ['style', [
-        ['width', 200 - 20],
-        ['height', navInnerHeight],
-      ]],
-    ]);
-    this.clipPathEl.appendChild(this.clipRectEl);
-    this.defsEl.appendChild(this.clipPathEl);
-    this.el.appendChild(this.defsEl);
-
     this.lineInnerWrapperEl = new DomHelper('g', [
       ['class', 'lines-inner'],
       ['clip-path', 'url(#lineInner)'],
@@ -324,15 +396,25 @@ class Navigator {
         ['pointer-events', 'none'],
       ]],
     ]);
-    this.lineChartData.forEach((lineChart) => {
-      const lineEl = this.renderLine(lineChart, maxLineHeight);
+
+    for (let i = this.chartData.length - 1; i >= 0; i -= 1) {
+      const lineChart = this.chartData[i];
+
+      let lineEl;
+      if (lineChart.type === 'bar') {
+        lineEl = this.renderBar(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
+      } else {
+        lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
+      }
+
       this.lineInnerEls[lineChart.id] = {
         lineEl,
         ...lineChart,
       };
 
       this.lineInnerWrapperEl.appendChild(lineEl);
-    });
+    }
+
     this.el.appendChild(this.lineInnerWrapperEl);
 
     this.whiteOvalLeftEl = new DomHelper('rect', [
@@ -370,7 +452,6 @@ class Navigator {
 // class Tooltip {}
 // class BarChart {}
 // class PieChart {}
-
 // class LegendSwitchers {}
 
 class Chart {
@@ -389,97 +470,100 @@ class Chart {
 
     this.target = target;
 
-    this.lineChartData = [];
-    this.barChartData = [];
-    this.areaChartData = [];
+    this.chartData = [];
+    this.prevColumnValues = [];
+    this.allColumnData = [];
 
     this.timeLine = [];
   }
 
   processData() {
+    if (this.data.percentage) {
+      this.data.columns.forEach((column) => {
+        if (column[0] === 'x') {
+          return;
+        }
+
+        for (let i = 1; i < column.length; i += 1) {
+          if (!this.allColumnData[i - 1]) {
+            this.allColumnData[i - 1] = 0;
+          }
+
+          this.allColumnData[i - 1] += column[i];
+        }
+      });
+    }
+
     this.data.columns.forEach((column) => {
       const id = column[0];
       const columnData = [...column];
       columnData.shift();
 
-      if (this.data.types[id] === 'line') {
-        this.processLineChart(id, this.data.names[id], this.data.colors[id], columnData);
-      } else if (this.data.types[id] === 'bar') {
-        this.processBarChart(id, this.data.names[id], this.data.colors[id], columnData);
-      } else if (this.data.types[id] === 'area') {
-        this.processAreaChart(id, this.data.names[id], this.data.colors[id], columnData);
+      if (this.data.types[id] !== 'x') {
+        this.generatePath(id, this.data.names[id], this.data.colors[id], this.data.types[id], columnData, this.data);
       } else {
         this.timeLine = columnData;
       }
     });
   }
 
-  processLineChart(id, name, color, columnData) {
+  generatePath(id, name, color, type, columnData, data) {
     let maxValue = 0;
-    let path = `M0 ${columnData[0]}`;
+    let value = (data.percentage ? columnData[0] / this.allColumnData[0] : columnData[0]) + (data.stacked && this.prevColumnValues[0] ? this.prevColumnValues[0] : 0);
+    // if (data.percentage) {
+    //   value /= this.allColumnData[0];
+    // }
+
+    let path = '';
+    if (type === 'area') {
+      path = `M0 0 L 0 ${value}`;
+    } else if (type === 'bar') {
+      path = `M0 0 L 0 ${value}`;
+    } else {
+      path = `M0 ${value}`;
+    }
+
+    this.prevColumnValues[0] = value;
 
     for (let i = 1; i < columnData.length; i += 1) {
-      path += ` L ${i} ${columnData[i]}`;
+      value = (data.percentage ? columnData[i] / this.allColumnData[i] : columnData[i]) + (data.stacked && this.prevColumnValues[i] ? this.prevColumnValues[i] : 0);
+      // if (data.percentage) {
+      //   value /= this.allColumnData[i];
+      // }
 
-      if (maxValue < columnData[i]) {
-        maxValue = columnData[i];
+      if (type === 'bar') {
+        path += ` L ${i} ${this.prevColumnValues[i - 1]} L ${i} ${value}`;
+      } else {
+        path += ` L ${i} ${value}`;
+      }
+
+      this.prevColumnValues[i] = value;
+
+      if (maxValue < value) {
+        maxValue = value;
       }
     }
 
-    this.lineChartData.push({
+    if (type === 'area') {
+      path += ` L ${columnData.length - 1} 0`;
+    } else if (type === 'bar') {
+      path += ` L ${columnData.length - 1} 0`;
+    }
+
+    this.chartData.push({
       id,
       name,
       color,
       path,
-      maxValue,
-    });
-  }
-
-  processBarChart(id, name, color, columnData) {
-    let maxValue = 0;
-    let path = `M0 ${columnData[0]}`;
-
-    for (let i = 1; i < columnData.length; i += 1) {
-      path += ` L ${i} ${columnData[i]}`;
-
-      if (maxValue < columnData[i]) {
-        maxValue = columnData[i];
-      }
-    }
-
-    this.lineChartData.push({
-      id,
-      name,
-      color,
-      path,
-      maxValue,
-    });
-  }
-
-  processAreaChart(id, name, color, columnData) {
-    let maxValue = 0;
-    let path = `M0 ${columnData[0]}`;
-
-    for (let i = 1; i < columnData.length; i += 1) {
-      path += ` L ${i} ${columnData[i]}`;
-
-      if (maxValue < columnData[i]) {
-        maxValue = columnData[i];
-      }
-    }
-
-    this.lineChartData.push({
-      id,
-      name,
-      color,
-      path,
+      type,
+      columnData,
       maxValue,
     });
   }
 
   render() {
     this.processData();
-    console.log(this.lineChartData);
+    // console.log(this.chartData);
     const { width, height } = this.stateHelper.state;
 
     const styles = [
@@ -490,12 +574,12 @@ class Chart {
 
     this.el = new DomHelper('svg', [['style', styles]]);
 
-    if (this.lineChartData.length) {
-      this.lineChart = new LineChart(this.lineChartData, this.stateHelper);
-      this.el.appendChild(this.lineChart.el);
-    }
+    // if (this.chartData.length) {
+    //   this.lineChart = new LineChart(this.lineChartData, this.stateHelper);
+    //   this.el.appendChild(this.lineChart.el);
+    // }
 
-    this.navigator = new Navigator(this.lineChartData, this.timeLine, this.stateHelper);
+    this.navigator = new Navigator(this.chartData, this.timeLine, this.stateHelper, this.data);
     this.el.appendChild(this.navigator.el);
 
     this.target.appendChild(this.el.el);
