@@ -31,7 +31,7 @@ export class DomHelper {
   }
 
   removeChild(child) {
-    if (child.el) {
+    if (child && child.el) {
       this.el.removeChild(child.el);
     }
   }
@@ -51,14 +51,15 @@ export class StateHelper {
       navBackOpacity: 0.6,
       navLineStroke: 2,
       navBackColor: '#C0D1E1',
+      lineStroke: 3,
     };
 
     const defaultState = {
       isNightMode: false,
       width: 500,
       height: 500,
-      startRange: 0,
-      endRange: 50,
+      startRange: 100,
+      endRange: 200,
     };
 
     this.state = { ...defaultState, ...state };

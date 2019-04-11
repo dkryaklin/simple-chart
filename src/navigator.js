@@ -10,11 +10,6 @@ export default class Navigator {
     this.stateHelper = stateHelper;
     this.timeLine = timeLine;
     this.data = data;
-    // this.barChartData = barChartData;
-    // this.areaChartData = areaChartData;
-
-    this.startRange = 100;
-    this.endRange = 200;
 
     this.lineEls = {};
     this.lineInnerEls = {};
@@ -23,9 +18,6 @@ export default class Navigator {
 
     this.render();
 
-    // touchstart
-    // touchend
-    // touchmove
     this.backEl.el.addEventListener('touchstart', event => this.mouseDown(event));
     document.addEventListener('touchend', () => this.mouseUp());
     document.addEventListener('touchmove', event => this.mouseMove(event));
@@ -33,15 +25,21 @@ export default class Navigator {
     this.backEl.el.addEventListener('mousedown', event => this.mouseDown(event));
     document.addEventListener('mouseup', () => this.mouseUp());
     document.addEventListener('mousemove', event => this.mouseMove(event));
+
+    this.stateHelper.stateSubscribe(['endRange'], () => {
+      this.update();
+    });
   }
 
   getNavBlock(left) {
+    const { startRange, endRange } = this.stateHelper.state;
+
     let result = 0;
-    if (left >= this.startRange - 20 && left < this.startRange + 10) {
+    if (left >= startRange - 20 && left < startRange + 10) {
       result = 1;
-    } else if (left >= this.startRange + 10 && left < this.endRange - 10) {
+    } else if (left >= startRange + 10 && left < endRange - 10) {
       result = 2;
-    } else if (left >= this.endRange - 10 && left < this.endRange + 20) {
+    } else if (left >= endRange - 10 && left < endRange + 20) {
       result = 3;
     }
 
@@ -49,9 +47,11 @@ export default class Navigator {
   }
 
   mouseDown(event) {
+    const { startRange } = this.stateHelper.state;
+
     const ctm = event.target.getScreenCTM();
     this.left = (typeof event.clientX === 'number' ? event.clientX : event.touches[0].clientX) - ctm.e + 1;
-    this.rangeDiffBeforeChange = this.left - this.startRange;
+    this.rangeDiffBeforeChange = this.left - startRange;
 
     this.selectedNavBlock = this.getNavBlock(this.left);
 
@@ -68,6 +68,10 @@ export default class Navigator {
   }
 
   mouseMove(event) {
+    const { width } = this.stateHelper.state;
+    const { chartIndent } = this.stateHelper.constants;
+    let { startRange, endRange } = this.stateHelper.state;
+
     const ctm = this.selectorEl.el.getScreenCTM();
     const left = (typeof event.clientX === 'number' ? event.clientX : event.touches[0].clientX) - ctm.e + 1;
 
@@ -87,16 +91,40 @@ export default class Navigator {
     }
 
     if (this.selectedNavBlock === 1) {
-      this.startRange = left;
+      startRange = left;
     } else if (this.selectedNavBlock === 3) {
-      this.endRange = left;
+      endRange = left;
     } else if (this.selectedNavBlock === 2) {
-      const rangeDiff = this.endRange - this.startRange;
-      this.startRange = left - this.rangeDiffBeforeChange;
-      this.endRange = this.startRange + rangeDiff;
+      const rangeDiff = endRange - startRange;
+      startRange = left - this.rangeDiffBeforeChange;
+      endRange = startRange + rangeDiff;
     }
-    
-    this.update();
+
+    const rangeWidth = endRange - startRange;
+
+    if (startRange < chartIndent) {
+      startRange = chartIndent;
+      if (this.selectedNavBlock === 2) {
+        endRange = chartIndent + rangeWidth;
+      }
+    } else if (endRange > width - chartIndent) {
+      endRange = width - chartIndent;
+      if (this.selectedNavBlock === 2) {
+        startRange = width - rangeWidth - chartIndent;
+      }
+    } else if (rangeWidth < 50) {
+      if (this.selectedNavBlock === 1) {
+        startRange = endRange - 50;
+      } else if (this.selectedNavBlock === 3) {
+        endRange = startRange + 50;
+      }
+    }
+
+    if (startRange !== this.stateHelper.state.startRange || endRange !== this.stateHelper.state.endRange) {
+      this.stateHelper.setState({ startRange, endRange });
+    }
+
+    // this.update();
     // cancelAnimationFrame(this.animFrame);
     // this.animFrame = requestAnimationFrame(() => {
     //   this.update();
@@ -105,7 +133,7 @@ export default class Navigator {
 
   renderLine(lineChart, maxValue) {
     const { width } = this.stateHelper.state;
-    const { chartIndent, navInnerHeight, navHeight, navLineStroke, navRadius } = this.stateHelper.constants;
+    const { chartIndent, navInnerHeight, navHeight, navLineStroke } = this.stateHelper.constants;
 
     const scaleX = (width - chartIndent * 2) * (1 + 1 / (1 + this.timeLine.length)) / this.timeLine.length;
     const scaleY = navInnerHeight / maxValue;
@@ -116,42 +144,13 @@ export default class Navigator {
       ['stroke', lineChart.color],
     ];
 
-    if (lineChart.type === 'area') {
+    if (lineChart.type === 'area' || lineChart.type === 'bar') {
       lineStyle.push(['fill', lineChart.color]);
     } else {
       lineStyle.push(['fill', 'none']);
     }
 
     const el = new DomHelper('path', [
-      ['rx', navRadius],
-      ['ry', navRadius],
-      ['d', lineChart.path],
-      ['style', lineStyle],
-      ['transform', `scale(${scaleX}, ${scaleY}) translate(${chartIndent / scaleX},${(navHeight - navInnerHeight) / 2 / scaleY})`],
-    ]);
-
-    return el;
-  }
-
-  renderBar(lineChart, maxValue) {
-    const { width } = this.stateHelper.state;
-    const {
-      chartIndent, navInnerHeight, navHeight, navLineStroke, navRadius,
-    } = this.stateHelper.constants;
-
-    const scaleX = (width - chartIndent * 2) * (1 + 1 / (1 + this.timeLine.length)) / this.timeLine.length;
-    const scaleY = navInnerHeight / maxValue;
-
-    const lineStyle = [
-      ['vector-effect', 'non-scaling-stroke'],
-      ['fill', lineChart.color],
-      ['stroke-width', navLineStroke],
-      ['stroke', lineChart.color],
-    ];
-
-    const el = new DomHelper('path', [
-      ['rx', navRadius],
-      ['ry', navRadius],
       ['d', lineChart.path],
       ['style', lineStyle],
       ['transform', `scale(${scaleX}, ${scaleY}) translate(${chartIndent / scaleX},${(navHeight - navInnerHeight) / 2 / scaleY})`],
@@ -161,16 +160,16 @@ export default class Navigator {
   }
 
   renderDefs() {
-    const { width } = this.stateHelper.state;
+    const { width, startRange, endRange } = this.stateHelper.state;
     const { chartIndent, navHeight, navInnerHeight, navRadius } = this.stateHelper.constants;
 
     this.defsEl = new DomHelper('defs');
 
     this.clipPathRectEl = new DomHelper('clipPath', [['id', `lineInner${this.id}`]]);
     this.clipRectEl = new DomHelper('rect', [
-      ['x', this.startRange + 10],
+      ['x', startRange + 10],
       ['y', (navHeight - navInnerHeight) / 2],
-      ['width', this.endRange - this.startRange - 20],
+      ['width', endRange - startRange - 20],
       ['style', [
         ['height', navInnerHeight],
       ]],
@@ -205,13 +204,7 @@ export default class Navigator {
 
     for (let i = this.chartData.length - 1; i >= 0; i -= 1) {
       const lineChart = this.chartData[i];
-
-      let lineEl;
-      if (lineChart.type === 'bar') {
-        lineEl = this.renderBar(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
-      } else {
-        lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
-      }
+      const lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
 
       this.lineEls[lineChart.id] = {
         lineEl,
@@ -249,6 +242,7 @@ export default class Navigator {
     if (!this.data.y_scaled) {
       maxLineHeight = Math.max(...this.chartData.map(lineChart => lineChart.maxValue));
     }
+    const { startRange, endRange } = this.stateHelper.state;
 
     const {
       navHeight,
@@ -260,11 +254,11 @@ export default class Navigator {
     } = this.stateHelper.constants;
 
     this.selectorEl = new DomHelper('rect', [
-      ['x', this.startRange - 1],
+      ['x', startRange - 1],
       ['y', 0],
       ['rx', navRadius],
       ['ry', navRadius],
-      ['width', this.endRange - this.startRange + 2],
+      ['width', endRange - startRange + 2],
       ['style', [
         ['height', navHeight],
         ['fill', '#C0D1E1'],
@@ -275,9 +269,9 @@ export default class Navigator {
     this.el.appendChild(this.selectorEl);
 
     this.whiteEl = new DomHelper('rect', [
-      ['x', this.startRange + 10],
+      ['x', startRange + 10],
       ['y', (navHeight - navInnerHeight) / 2],
-      ['width', this.endRange - this.startRange - 20],
+      ['width', endRange - startRange - 20],
       ['style', [
         ['height', navInnerHeight],
         ['fill', '#fff'],
@@ -290,20 +284,14 @@ export default class Navigator {
       ['class', 'lines-inner'],
       ['clip-path', `url(#lineInner${this.id})`],
       ['style', [
-        ['width', this.endRange - this.startRange - 20],
+        ['width', endRange - startRange - 20],
         ['pointer-events', 'none'],
       ]],
     ]);
 
     for (let i = this.chartData.length - 1; i >= 0; i -= 1) {
       const lineChart = this.chartData[i];
-
-      let lineEl;
-      if (lineChart.type === 'bar') {
-        lineEl = this.renderBar(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
-      } else {
-        lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
-      }
+      const lineEl = this.renderLine(lineChart, !this.data.y_scaled ? maxLineHeight : lineChart.maxValue);
 
       this.lineInnerEls[lineChart.id] = {
         lineEl,
@@ -316,7 +304,7 @@ export default class Navigator {
     this.el.appendChild(this.lineInnerWrapperEl);
 
     this.whiteOvalLeftEl = new DomHelper('rect', [
-      ['x', this.startRange + (10 - navOvalWidth) / 2],
+      ['x', startRange + (10 - navOvalWidth) / 2],
       ['y', (navHeight - navInnerHeight + navInnerHeight - navOvalHeight) / 2],
       ['rx', navOvalRadius],
       ['ry', navOvalRadius],
@@ -330,7 +318,7 @@ export default class Navigator {
     this.el.appendChild(this.whiteOvalLeftEl);
 
     this.whiteOvalRightEl = new DomHelper('rect', [
-      ['x', this.startRange + (10 - navOvalWidth) / 2 + this.endRange - this.startRange - 10],
+      ['x', startRange + (10 - navOvalWidth) / 2 + endRange - startRange - 10],
       ['y', (navHeight - navInnerHeight + navInnerHeight - navOvalHeight) / 2],
       ['rx', navOvalRadius],
       ['ry', navOvalRadius],
@@ -354,50 +342,30 @@ export default class Navigator {
   }
 
   update() {
-    const { width } = this.stateHelper.state;
-    const { chartIndent, navOvalWidth } = this.stateHelper.constants;
-
-    const rangeWidth = this.endRange - this.startRange;
-
-    if (this.startRange < chartIndent) {
-      this.startRange = chartIndent;
-      if (this.selectedNavBlock === 2) {
-        this.endRange = chartIndent + rangeWidth;
-      }
-    } else if (this.endRange > width - chartIndent) {
-      this.endRange = width - chartIndent;
-      if (this.selectedNavBlock === 2) {
-        this.startRange = width - rangeWidth - chartIndent;
-      }
-    } else if (rangeWidth < 50) {
-      if (this.selectedNavBlock === 1) {
-        this.startRange = this.endRange - 50;
-      } else if (this.selectedNavBlock === 3) {
-        this.endRange = this.startRange + 50;
-      }
-    }
+    const { startRange, endRange } = this.stateHelper.state;
+    const { navOvalWidth } = this.stateHelper.constants;
 
     this.clipRectEl.setAttrs([
-      ['x', this.startRange + 10],
-      ['width', this.endRange - this.startRange - 20],
+      ['x', startRange + 10],
+      ['width', endRange - startRange - 20],
     ]);
 
     this.selectorEl.setAttrs([
-      ['x', this.startRange - 1],
-      ['width', this.endRange - this.startRange + 2],
+      ['x', startRange - 1],
+      ['width', endRange - startRange + 2],
     ]);
 
     this.whiteEl.setAttrs([
-      ['x', this.startRange + 10],
-      ['width', this.endRange - this.startRange - 20],
+      ['x', startRange + 10],
+      ['width', endRange - startRange - 20],
     ]);
 
     this.whiteOvalLeftEl.setAttrs([
-      ['x', this.startRange + (10 - navOvalWidth) / 2],
+      ['x', startRange + (10 - navOvalWidth) / 2],
     ]);
 
     this.whiteOvalRightEl.setAttrs([
-      ['x', this.startRange + (10 - navOvalWidth) / 2 + this.endRange - this.startRange - 10],
+      ['x', startRange + (10 - navOvalWidth) / 2 + endRange - startRange - 10],
     ]);
   }
 }
