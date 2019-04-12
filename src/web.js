@@ -1,4 +1,6 @@
-import { DataHelper } from './helpers';
+import { DataHelper, StoreHelper } from './helpers';
+import { Switchers } from './switchers';
+import { Navigator } from './navigator2';
 
 // eslint-disable-next-line func-names
 (function () {
@@ -91,14 +93,16 @@ import { DataHelper } from './helpers';
     constructor() {
       super();
 
+      const storeHelper = new StoreHelper();
+
       const shadow = this.attachShadow({ mode: 'open' });
       const chartEl = document.createElement('div');
+      chartEl.className = 'chart';
 
       chartEl.innerHTML = `
         <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
         <style>
           .chart{
-            width: 100%;
             height: 100%;
             overflow: hidden;
             font-family: 'Open Sans', sans-serif;
@@ -115,36 +119,32 @@ import { DataHelper } from './helpers';
             height: 40px;
           }
         </style>
-        <div class="chart">
-          ${header({ title: 'Followers' })}
-          <div class="svg-wrapper">
-            <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 300 300"></svg>
-            <div class="y-axis"></div>
-          </div>
-          <div class="x-axis"></div>
-          <div class="navigator">
-            <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 40 100"></svg>
-            <div class="nav-overlay"></div>
-            <div class="nav-selector">
-              <div class="nav-oval"></div>
-              <div class="nav-oval"></div>
-              <div class="nav-sel-svg">
-                <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 40 100"></svg>
-              </div>
+        ${header({ title: 'Followers' })}
+        <div class="svg-wrapper">
+          <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 300 300"></svg>
+          <div class="y-axis"></div>
+        </div>
+        <div class="x-axis"></div>
+        <div class="navigator">
+          <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 40 100"></svg>
+          <div class="nav-overlay"></div>
+          <div class="nav-selector">
+            <div class="nav-oval"></div>
+            <div class="nav-oval"></div>
+            <div class="nav-sel-svg">
+              <svg xmlns='http://www.w3.org/2000/svg' class="svg-chart" viewBox="0 0 40 100"></svg>
             </div>
           </div>
-          <div class="switchers">
-            <div class="switcher"></div>
-          </div>
-          <div class="tooltip">
-            <div class="tooltip-date"></div>
-            <div class="tooltip-value"></div>
-            <div class="tooltip-value"></div>
-          </div>
-          ${loading({ visible: true })}
         </div>
+        <div class="tooltip">
+          <div class="tooltip-date"></div>
+          <div class="tooltip-value"></div>
+          <div class="tooltip-value"></div>
+        </div>
+        ${loading({ visible: true })}
       `;
 
+      this.switchers = new Switchers({ target: chartEl, lines: [{ name: 'test1', color: '#ff00ff' }, { name: 'test2', color: '#ff0000' }] });
       this.loadingEl = chartEl.querySelector('.loading');
 
       shadow.appendChild(chartEl);
@@ -160,13 +160,127 @@ import { DataHelper } from './helpers';
 
     connectedCallback() {
       const dataUrl = this.getAttribute('url');
+      // const width = this.getAttribute('width');
+      // const height = this.getAttribute('height');
+      // const isNightMode = this.getAttribute('nightMode');
 
       this.dataHelper = new DataHelper(dataUrl);
       this.dataHelper.fetchOverview().then((data) => {
         console.log(data);
-        // this.data = data;
-        this.hideLoading();
+
+        // setTimeout(() => {
+        //   // this.prepareDataForStore(data, width, height, isNightMode);
+        //   this.hideLoading();
+        // });
       });
+    }
+
+    prepareDataForStore(data, width, height, isNightMode) {
+      let maxValue = 0;
+      const summColumnData = [];
+      const prevColumnData = [];
+      const linesId = [];
+
+      const lines = {
+        // id: string,
+        // name: string,
+        // color: string,
+        // path: string,
+        // type: stirng,
+        // columnData: [],
+        // maxValue: [],
+      };
+      let timeLine;
+
+      if (data.percentage) {
+        data.columns.forEach((column) => {
+          if (column[0] !== 'x') {
+            for (let i = 1; i < column.length; i += 1) {
+              summColumnData[i - 1] = summColumnData[i - 1] ? summColumnData[i - 1] + column[i] : column[i];
+            }
+          }
+        });
+      }
+
+      if (data.stacked) {
+        data.columns.forEach((column) => {
+          const id = column[0];
+  
+          if (data.types[id] === 'x') {
+            timeLine = column;
+          } else {
+            for (let index = 1; index < column.length; index += 1) {
+              const el = index - 1;
+              prevColumnData[el] = (data.percentage ? column[el] / summColumnData[el] : column[el]) + (data.stacked && prevColumnData[el] ? prevColumnData[el] : 0);
+  
+              if (maxValue < prevColumnData[el]) {
+                maxValue = prevColumnData[el];
+              }
+            }
+          }
+        });
+      }
+
+      data.columns.forEach((column) => {
+        const id = column[0];
+
+        if (data.types[id] === 'x') {
+          timeLine = column;
+        } else {
+          for (let index = 1; index < column.length; index += 1) {
+            const el = index - 1;
+            prevColumnData[el] = (data.percentage ? column[el] / summColumnData[el] : column[el]) + (data.stacked && prevColumnData[el] ? prevColumnData[el] : 0);
+
+            if (maxValue < prevColumnData[el]) {
+              maxValue = prevColumnData[el];
+            }
+          }
+        }
+      });
+
+      let store = {
+        isNightMode,
+        width,
+        height,
+        yScaled: data.y_scaled,
+        stacked: data.stacked,
+        percentage: data.percentage,
+        linesId,
+        lines,
+        timeLine,
+        summColumnData,
+        prevColumnData,
+      };
+
+      this.storeHelper.setStore(store);
+
+
+      // const scaleY = 40 / maxValue;
+
+      // data.columns.forEach((column) => {
+      //   const id = column[0];
+      //   const type = data.types[id];
+      //   let path = '';
+
+      //   if (type === 'area') {
+      //     path = `M0 0 L 0 ${column[1]}`;
+      //   } else if (type === 'bar') {
+      //     path = `M0 0 L 0 ${column[1]}`;
+      //   } else {
+      //     path = `M0 ${column[1]}`;
+      //   }
+
+      //   if (type !== 'x') {
+      //     for (let index = 2; index < column.length; index += 1) {
+      //       const el = index - 1;
+      //       prevColumnData[el] = (data.percentage ? column[el] / summColumnData[el] : column[el]) + (data.stacked && prevColumnData[el] ? prevColumnData[el] : 0);
+
+      //       if (maxValue < prevColumnData[el]) {
+      //         maxValue = prevColumnData[el];
+      //       }
+      //     }
+      //   }
+      // });
     }
   }
 
