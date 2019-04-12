@@ -1,0 +1,10 @@
+body {
+    margin: 0;
+    overflow-x: hidden;
+    touch-action: pan-y pinch-zoom;
+}
+
+.chart {
+    width: 500px;
+    height: 700px;
+}

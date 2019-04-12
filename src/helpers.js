@@ -60,6 +60,13 @@ export class StateHelper {
       height: 500,
       startRange: 100,
       endRange: 200,
+      yScaled: false,
+      stacked: false,
+      percentage: false,
+      zoomed: false,
+      hoveredValue: null,
+      chartData: [],
+      hiddenCharts: [],
     };
 
     this.state = { ...defaultState, ...state };
