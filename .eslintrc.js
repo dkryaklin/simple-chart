@@ -13,5 +13,11 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
+    "max-len": ["off"],
+    "class-methods-use-this": ["off"],
+    "import/prefer-default-export": ["off"],
+    "indent": ["off"],
+    "linebreak-style": ["off"],
+    "no-useless-constructor": ["off"],
   },
 };
