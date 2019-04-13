@@ -56,14 +56,14 @@ const STYLES = `
     }
     .nav-click-left, .nav-click-right {
         position: absolute;
-        left: -20px;
-        width: 20px;
+        left: -40px;
+        width: 40px;
         top: 0;
         height: 100%;
     }
     .nav-click-right {
         left: auto;
-        right: -20px;
+        right: -40px;
     }
     .nav-svg-wrapper {
         position: absolute;

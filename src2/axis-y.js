@@ -3,10 +3,10 @@ import { DomHelper } from './helpers';
 const STYLES = `
     .axis-y {
         position: absolute;
-        left: 0;
+        left: 16px;
         top: 0;
         bottom: 35px;
-        right: 0;
+        right: 16px;
         opacity: 1;
         transition: 0.2s opacity;
     }
@@ -31,30 +31,30 @@ const STYLES = `
         right: 0;
     }
     .axis-y-items.--show-down {
-        animation: show-up 0.2s 1 ease-in-out;
+        animation: axis-show-up 0.2s 1 ease-in-out;
     }
     .axis-y-items.--show-up {
-        animation: show-down 0.2s 1 ease-in-out;
+        animation: axis-show-down 0.2s 1 ease-in-out;
     }
     .axis-y-items.--hide-down {
-        animation: hide-up 0.2s 1 ease-in-out;
+        animation: axis-hide-up 0.2s 1 ease-in-out;
     }
     .axis-y-items.--hide-up {
-        animation: hide-down 0.2s 1 ease-in-out;
+        animation: axis-hide-down 0.2s 1 ease-in-out;
     }
-    @keyframes show-up {
+    @keyframes axis-show-up {
         0% {transform:translateY(-30px);opacity:0;}
         100%{transform:translateY(0);opacity:1;}
     }
-    @keyframes show-down {
+    @keyframes axis-show-down {
         0% {transform:translateY(30px);opacity:0;}
         100%{transform:translateY(0);opacity:1;}
     }
-    @keyframes hide-up {
+    @keyframes axis-hide-up {
         0% {transform:translateY(0);opacity:1;}
         100%{transform:translateY(-30px);opacity:0;}
     }
-    @keyframes hide-down {
+    @keyframes axis-hide-down {
         0% {transform:translateY(0);opacity:1;}
         100%{transform:translateY(30px);opacity:0;}
     }
@@ -69,15 +69,18 @@ export class AxisY {
     }
 
     getMax(props) {
+        const startIndex = Math.floor(props.timeLine.length * props.startRange / 100);
+        const endIndex = Math.ceil(props.timeLine.length * props.endRange / 100);
+
         let maxY = 0;
         props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                const max = Math.max(...line.column);
-                if (max > maxY) {
-                    maxY = max;
+            for (let i = startIndex; i <= endIndex; i += 1) {
+                if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
+                    maxY = line.column[i];
                 }
             }
         });
+
         return maxY;
     }
 
@@ -145,6 +148,9 @@ export class AxisY {
     }
 
     update(newProps) {
-        this.updateAxis(newProps);
+        clearTimeout(this.timeout);
+        this.timeout = setTimeout(() => {
+            this.updateAxis(newProps);
+        }, 50);
     }
 }
