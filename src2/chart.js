@@ -29,6 +29,7 @@ class SimpleChart extends HTMLElement {
             zoomTimeLine: null,
             startRange: 70,
             endRange: 90,
+            chartIndent: 16,
             isLoading: true,
             lines: [],
             hiddenLines: [],
@@ -45,33 +46,17 @@ class SimpleChart extends HTMLElement {
     render() {
         this.header = new Header({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
         this.chartWrapper = new ChartWrapper({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
-        // svg wrapper
-        // lines, zoomLines, hidden lines, selectedDate
-        // yaxis
-        // lines, zoomLines, y_scaled
-        // xaxis
-        // timeLine, zoomTimeLine,
         this.navigator = new Navigator({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
         this.switchers = new Switchers({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
-
-        // navigator
-        // range, lines, zoomLines, tileLine, zoomTimeLine, hiddenLines
-        // tooltip
-        // lines, zoom
         this.loading = new Loading({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
     }
 
-    // translateChartWrapper(state) {
-    //     if (this.)
-
-    //     const { startRange, endRange } = state;
-    //     const diffRange = endRange - startRange;
-    //     const scaleX = diffRange / 100;
-    //     console.log(scaleX);
-    // }
-
     update(newState) {
         this.state = { ...this.state, ...newState };
+        if (!this.inited) {
+            return;
+        }
+
         this.header.update(this.state);
         this.chartWrapper.update(this.state);
         this.navigator.update(this.state);
@@ -86,6 +71,8 @@ class SimpleChart extends HTMLElement {
         this.navigator.init(this.state);
         this.switchers.init(this.state);
         this.loading.init(this.state);
+
+        this.inited = true;
     }
 
     setState(newState) {
@@ -93,12 +80,18 @@ class SimpleChart extends HTMLElement {
     }
 
     connectedCallback() {
-        this.dataUrl = this.getAttribute('url');
-        fetch(`${this.dataUrl}/overview.json`).then(response => response.json()).then((data) => {
+        const dataUrl = this.getAttribute('url');
+        const width = parseInt(this.getAttribute('width'), 10);
+        const height = parseInt(this.getAttribute('height'), 10);
+
+        fetch(`${dataUrl}/overview.json`).then(response => response.json()).then((data) => {
             console.log(data);
 
             const newState = {
                 lines: [],
+                dataUrl,
+                width: width - this.state.chartIndent * 2,
+                height,
             };
 
             data.columns.forEach((column) => {
@@ -117,6 +110,11 @@ class SimpleChart extends HTMLElement {
                     newState.lines[id].column.shift();
                 }
             });
+
+            newState.scaleRange = (this.state.endRange - this.state.startRange) / 100;
+            newState.chartWidth = newState.width / newState.scaleRange;
+            newState.chartHeight = newState.height - 35 - 40 - 65 - 50;
+            newState.left = newState.chartWidth * this.state.startRange / 100;
 
             console.log(newState);
 

@@ -1,8 +1,12 @@
 import { DomHelper } from './helpers';
 
+const NAV_HEIGHT = 40;
+const NAV_HEIGHT_INNER = 38;
+const NAV_STROKE_WIDTH = 2;
+
 const STYLES = `
     .navigator {
-        height: 40px;
+        height: ${NAV_HEIGHT}px;
         border-radius: 5px;
         overflow: hidden;
         position:relative;
@@ -14,7 +18,7 @@ const STYLES = `
     .nav-left, .nav-right {
         background-color: #E2EEF9;
         opacity: 0.6;
-        height: 38px;
+        height: ${NAV_HEIGHT_INNER}px;
         flex-shrink:0;
         width: 100%;
         transform: translateX(5px);
@@ -25,13 +29,13 @@ const STYLES = `
     .nav-right {
         flex-shrink:0;
         width: 100%;
-        height: 38px;
+        height: ${NAV_HEIGHT_INNER}px;
         background-color: #E2EEF9;
         opacity: 0.6;
     }
     .nav-selector {
         flex-shrink:0;
-        height: 38px;
+        height: ${NAV_HEIGHT_INNER}px;
         border: 1px solid #C0D1E1;
         border-left-width: 10px;
         border-right-width: 10px;
@@ -70,12 +74,12 @@ const STYLES = `
         left: 0;
         top: 1;
         width: 100%;
-        height: 38px;
+        height: ${NAV_HEIGHT_INNER}px;
         overflow: hidden;
     }
     .nav-svg-path {
         fill: none;
-        stroke-width: 2;
+        stroke-width: ${NAV_STROKE_WIDTH};
         opacity: 1;
         transform: translateY(0);
         transition: 0.2s d, 0.2s transform, 0.2s opacity;
@@ -107,7 +111,6 @@ export class Navigator {
         this.clickProps = this.props;
         this.clickedSide = clickedSide;
 
-        this.navRect = this.navigator.getBoundingClientRect();
         document.body.style.userSelect = 'none';
     }
 
@@ -121,16 +124,16 @@ export class Navigator {
             return;
         }
 
-        const startPixels = this.navRect.width * this.clickProps.startRange / 100;
-        const endPixels = this.navRect.width * this.clickProps.endRange / 100;
+        const startPixels = this.clickProps.width * this.clickProps.startRange / 100;
+        const endPixels = this.clickProps.width * this.clickProps.endRange / 100;
 
         const diff = (typeof event.clientX === 'number' ? event.clientX : event.touches[0].clientX) - this.clickX;
 
         const newStartPixels = startPixels + diff;
         const newEndPixels = endPixels + diff;
 
-        let newStartRange = newStartPixels * 100 / this.navRect.width;
-        let newEndRange = newEndPixels * 100 / this.navRect.width;
+        let newStartRange = newStartPixels * 100 / this.clickProps.width;
+        let newEndRange = newEndPixels * 100 / this.clickProps.width;
         const diffRange = newEndRange - newStartRange;
 
         let newProps;
@@ -144,7 +147,7 @@ export class Navigator {
             if (newStartRange === this.clickProps.startRange) {
                 return;
             }
-            newProps = { startRange: newStartRange };
+            newProps = { startRange: newStartRange, endRange: this.clickProps.endRange };
         } else if (this.clickedSide === 3) {
             if (newEndRange > 100) {
                 newEndRange = 100;
@@ -155,7 +158,7 @@ export class Navigator {
             if (newEndRange === this.clickProps.newEndRange) {
                 return;
             }
-            newProps = { endRange: newEndRange };
+            newProps = { endRange: newEndRange, startRange: this.clickProps.startRange };
         } else {
             if (newStartRange < 0) {
                 newStartRange = 0;
@@ -171,6 +174,10 @@ export class Navigator {
             newProps = { startRange: newStartRange, endRange: newEndRange };
         }
 
+        newProps.scaleRange = (newProps.endRange - newProps.startRange) / 100;
+        newProps.chartWidth = this.clickProps.width / newProps.scaleRange;
+        newProps.left = newProps.chartWidth * newProps.startRange / 100;
+   
         this.setProps(newProps);
     }
 
@@ -204,16 +211,15 @@ export class Navigator {
 
         this.maxY = maxY;
 
-        const navRect = this.navSvgWrapper.getBoundingClientRect();
         this.pathsStr = {};
 
-        const scaleX = navRect.width / (props.timeLine.length - 1);
-        const scaleY = (navRect.height - 2) / maxY;
+        const scaleX = props.width / (props.timeLine.length - 1);
+        const scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / maxY;
 
         props.lines.forEach((line) => {
-            let pathStr = `M0 ${navRect.height - line.column[0] * scaleY}`;
+            let pathStr = `M0 ${NAV_HEIGHT - line.column[0] * scaleY}`;
             for (let i = 1; i < line.column.length; i += 1) {
-                pathStr += ` L ${i * scaleX} ${navRect.height - line.column[i] * scaleY}`;
+                pathStr += ` L ${i * scaleX} ${NAV_HEIGHT - line.column[i] * scaleY}`;
             }
             this.pathsStr[line.id] = { pathStr };
         });
@@ -228,11 +234,9 @@ export class Navigator {
     }
 
     renderLines(props) {
-        const navRect = this.navSvgWrapper.getBoundingClientRect();
-
         this.svg = DomHelper.svg('svg', this.navSvgWrapper);
-        this.svg.setAttribute('width', navRect.width);
-        this.svg.setAttribute('height', navRect.height);
+        this.svg.setAttribute('width', props.width);
+        this.svg.setAttribute('height', NAV_HEIGHT);
 
         this.generatePaths(props);
 

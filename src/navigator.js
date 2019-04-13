@@ -123,12 +123,6 @@ export default class Navigator {
     if (startRange !== this.stateHelper.state.startRange || endRange !== this.stateHelper.state.endRange) {
       this.stateHelper.setState({ startRange, endRange });
     }
-
-    // this.update();
-    // cancelAnimationFrame(this.animFrame);
-    // this.animFrame = requestAnimationFrame(() => {
-    //   this.update();
-    // });
   }
 
   renderLine(lineChart, maxValue) {

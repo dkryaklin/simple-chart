@@ -21,7 +21,6 @@ const STYLES = `
         line-height: 20px;
         font-size: 9px;
         color: #8E8E93;
-        tran
     }
     .axis-y-items {
         position: absolute;
@@ -74,9 +73,11 @@ export class AxisY {
 
         let maxY = 0;
         props.lines.forEach((line) => {
-            for (let i = startIndex; i <= endIndex; i += 1) {
-                if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
-                    maxY = line.column[i];
+            if (props.hiddenLines.indexOf(line.id) === -1) {
+                for (let i = startIndex; i <= endIndex; i += 1) {
+                    if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
+                        maxY = line.column[i];
+                    }
                 }
             }
         });
@@ -84,9 +85,9 @@ export class AxisY {
         return maxY;
     }
 
-    fillItems(axisItems) {
-        const blockHeight = (this.axisY.clientHeight - 20) / 5;
-        const scaleY = this.axisY.clientHeight / this.maxY;
+    fillItems(axisItems, props) {
+        const blockHeight = ((props.chartHeight + 35) - 20) / 5;
+        const scaleY = props.chartHeight / this.maxY;
 
         for (let i = 1; i < 6; i += 1) {
             let value = i * blockHeight / scaleY;
@@ -106,13 +107,12 @@ export class AxisY {
 
     init(newProps) {
         this.maxY = this.getMax(newProps);
+
         const item0 = DomHelper.div('axis-y-item', this.axisY, '0');
         item0.style.bottom = 0;
-        this.axisItems = DomHelper.div('axis-y-items', this.axisY);
 
-        requestAnimationFrame(() => {
-            this.fillItems(this.axisItems);
-        });
+        this.axisItems = DomHelper.div('axis-y-items', this.axisY);
+        this.fillItems(this.axisItems, newProps);
     }
 
     updateAxis(props) {
@@ -137,7 +137,7 @@ export class AxisY {
         }
 
         const axisItems = DomHelper.div(`axis-y-items ${isUp ? '--show-up' : '--show-down'}`, this.axisY);
-        this.fillItems(axisItems);
+        this.fillItems(axisItems, props);
 
         this.axisItems.addEventListener('animationend', () => {
             this.axisY.removeChild(this.axisItems);
