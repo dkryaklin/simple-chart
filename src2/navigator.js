@@ -88,7 +88,6 @@ const STYLES = `
 
 export class Navigator {
     constructor(props, setProps) {
-        this.props = props;
         this.setProps = setProps;
 
         document.addEventListener('mouseup', () => this.mouseUp());
@@ -98,9 +97,7 @@ export class Navigator {
         document.addEventListener('touchmove', event => this.mouseMove(event));
 
         DomHelper.style(props.shadow, STYLES);
-        this.navigator = DomHelper.div('navigator', this.props.target);
-
-        this.render();
+        this.navigator = DomHelper.div('navigator', props.target);
     }
 
     mouseDown(event, clickedSide) {
@@ -269,8 +266,6 @@ export class Navigator {
         this.navClickRight = DomHelper.div('nav-click-right', this.navSelector);
         this.navClickRight.onmousedown = event => this.mouseDown(event, 3);
         this.navClickRight.ontouchstart = event => this.mouseDown(event, 3);
-
-        this.range(this.props);
     }
 
     range(props) {
@@ -279,14 +274,15 @@ export class Navigator {
     }
 
     update(newProps) {
-        if (this.props.lines.length !== newProps.lines.length) {
-            this.navSvgWrapper.innerHTML = '';
-            this.renderLines(newProps);
-        } else {
-            this.hiddenLines(newProps);
-        }
-
+        this.hiddenLines(newProps);
         this.range(newProps);
+        this.props = newProps;
+    }
+
+    init(newProps) {
+        this.render();
+        this.range(newProps);
+        this.renderLines(newProps);
         this.props = newProps;
     }
 }

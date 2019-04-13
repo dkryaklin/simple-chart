@@ -47,8 +47,6 @@ const STYLES = `
         margin-right: 10px;
         width: 18px;
         height: 18px;
-        background-size: 18px 18px;
-        background-image: url("/assets/zoom.svg");
     }
     .header-days {
         position: absolute;
@@ -90,23 +88,18 @@ const STYLES = `
 
 export class Header {
     constructor(props, setProps) {
-        this.props = props;
         this.setProps = setProps;
 
         DomHelper.style(props.shadow, STYLES);
-        this.header = DomHelper.div('header', this.props.target);
-
-        this.isZoomed(this.props);
-        this.render();
+        this.header = DomHelper.div('header', props.target);
     }
 
-    render() {
-        DomHelper.div('header-title', this.header, this.props.title);
+    render(props) {
+        DomHelper.div('header-title', this.header, props.title);
         const headerZoom = DomHelper.div('header-zoom', this.header, `${SEARCH_ICON}Zoom out`);
         headerZoom.onclick = () => this.zoomOut();
 
         this.headerDays = DomHelper.div('header-days', this.header);
-        this.range(this.props);
     }
 
     zoomOut() {
@@ -158,7 +151,9 @@ export class Header {
         if (value !== this.prevDaysVal && this.prevDaysVal) {
             this.prevDaysVal = value;
 
-            const isUp = props.startRange > this.prevProps.startRange;
+            const isUp = props.startRange > this.prevStartRange;
+            this.prevStartRange = props.startRange;
+
             const headerDays = DomHelper.div(`header-days ${isUp ? '--show-up' : '--show-down'}`, this.header, value);
 
             this.headerDays.addEventListener('animationend', () => {
@@ -180,8 +175,10 @@ export class Header {
         this.timeout = setTimeout(() => {
             this.range(newProps);
         }, 50);
+    }
 
-        this.prevProps = this.props;
-        this.props = newProps;
+    init(newProps) {
+        this.render(newProps);
+        this.range(newProps);
     }
 }

@@ -96,31 +96,23 @@ class Switcher {
 
 export class Switchers {
     constructor(props, setProps) {
-        this.props = props;
         this.setProps = setProps;
 
         DomHelper.style(props.shadow, STYLES);
-        this.switchers = DomHelper.div('switchers', this.props.target);
-
-        this.render();
+        this.switchers = DomHelper.div('switchers', props.target);
     }
 
-    render() {
-        this.switcherList = this.props.lines.map(line => new Switcher(line, { ...this.props, target: this.switchers }, this.setProps));
+    render(props) {
+        this.switcherList = props.lines.map(line => new Switcher(line, { ...props, target: this.switchers }, this.setProps));
     }
 
     update(newProps) {
-        if (newProps.lines.length !== this.props.lines.length) {
-            this.switchers.innerHTML = null;
-            this.props = newProps;
+        this.switcherList.forEach((switcher) => {
+            switcher.update(newProps);
+        });
+    }
 
-            this.render();
-        } else {
-            this.switcherList.forEach((switcher) => {
-                switcher.update(newProps);
-            });
-
-            this.props = newProps;
-        }
+    init(newProps) {
+        this.render(newProps);
     }
 }

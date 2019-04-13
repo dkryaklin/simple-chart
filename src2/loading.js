@@ -24,12 +24,11 @@ const STYLES = `
 
 export class Loading {
     constructor(props, setProps) {
-        this.props = props;
         this.setProps = setProps;
 
         DomHelper.style(props.shadow, STYLES);
         this.loading = DomHelper.div('loading', props.target, 'Loading...');
-        this.isLoading(this.props);
+        this.isLoading(props);
     }
 
     isLoading(props) {
@@ -42,6 +41,9 @@ export class Loading {
 
     update(newProps) {
         this.isLoading(newProps);
-        this.props = newProps;
+    }
+
+    init(newProps) {
+        this.isLoading(newProps);
     }
 }

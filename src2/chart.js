@@ -3,6 +3,7 @@ import { Header } from './header';
 import { Loading } from './loading';
 import { Switchers } from './switchers';
 import { Navigator } from './navigator';
+import { ChartWrapper } from './chart-wrapper';
 
 const STYLES = `
     .chart{
@@ -43,6 +44,7 @@ class SimpleChart extends HTMLElement {
 
     render() {
         this.header = new Header({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
+        this.chartWrapper = new ChartWrapper({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
         // svg wrapper
         // lines, zoomLines, hidden lines, selectedDate
         // yaxis
@@ -59,16 +61,35 @@ class SimpleChart extends HTMLElement {
         this.loading = new Loading({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
     }
 
-    update() {
+    // translateChartWrapper(state) {
+    //     if (this.)
+
+    //     const { startRange, endRange } = state;
+    //     const diffRange = endRange - startRange;
+    //     const scaleX = diffRange / 100;
+    //     console.log(scaleX);
+    // }
+
+    update(newState) {
+        this.state = { ...this.state, ...newState };
         this.header.update(this.state);
+        this.chartWrapper.update(this.state);
         this.navigator.update(this.state);
         this.switchers.update(this.state);
         this.loading.update(this.state);
     }
 
-    setState(newState) {
+    init(newState) {
         this.state = { ...this.state, ...newState };
-        this.update();
+        this.header.init(this.state);
+        this.chartWrapper.init(this.state);
+        this.navigator.init(this.state);
+        this.switchers.init(this.state);
+        this.loading.init(this.state);
+    }
+
+    setState(newState) {
+        this.update(newState);
     }
 
     connectedCallback() {
@@ -99,8 +120,7 @@ class SimpleChart extends HTMLElement {
 
             console.log(newState);
 
-            newState.isLoading = false;
-            this.setState(newState);
+            this.init({ ...newState, isLoading: false });
         });
     }
 }
