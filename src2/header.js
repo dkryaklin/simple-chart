@@ -158,7 +158,7 @@ export class Header {
         if (value !== this.prevDaysVal && this.prevDaysVal) {
             this.prevDaysVal = value;
 
-            const isUp = props.startRange > this.props.startRange;
+            const isUp = props.startRange > this.prevProps.startRange;
             const headerDays = DomHelper.div(`header-days ${isUp ? '--show-up' : '--show-down'}`, this.header, value);
 
             this.headerDays.addEventListener('animationend', () => {
@@ -175,8 +175,13 @@ export class Header {
 
     update(newProps) {
         this.isZoomed(newProps);
-        this.range(newProps);
 
+        clearTimeout(this.timeout);
+        this.timeout = setTimeout(() => {
+            this.range(newProps);
+        }, 50);
+
+        this.prevProps = this.props;
         this.props = newProps;
     }
 }

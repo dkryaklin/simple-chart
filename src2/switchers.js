@@ -34,7 +34,7 @@ const STYLES = `
         left: 0;
         top: 0;
         position: absolute;
-        padding: 0 18px;
+        padding: 0 17px;
         line-height: 36px;
         color: #fff;
         display: flex;

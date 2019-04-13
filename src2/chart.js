@@ -1,8 +1,8 @@
-// eslint-disable-next-line no-unused-vars
 import { DomHelper } from './helpers';
 import { Header } from './header';
 import { Loading } from './loading';
 import { Switchers } from './switchers';
+import { Navigator } from './navigator';
 
 const STYLES = `
     .chart{
@@ -26,8 +26,8 @@ class SimpleChart extends HTMLElement {
             isZoomed: false,
             timeLine: [],
             zoomTimeLine: null,
-            startRange: 80,
-            endRange: 100,
+            startRange: 70,
+            endRange: 90,
             isLoading: true,
             lines: [],
             hiddenLines: [],
@@ -43,17 +43,17 @@ class SimpleChart extends HTMLElement {
 
     render() {
         this.header = new Header({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
-        this.switchers = new Switchers({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
         // svg wrapper
         // lines, zoomLines, hidden lines, selectedDate
         // yaxis
         // lines, zoomLines, y_scaled
         // xaxis
         // timeLine, zoomTimeLine,
+        this.navigator = new Navigator({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
+        this.switchers = new Switchers({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
+
         // navigator
-        // range, lines, zoomLines, tileLine, zoomTimeLine
-        // switchers
-        // lines, hiddenLines, zoomLines,
+        // range, lines, zoomLines, tileLine, zoomTimeLine, hiddenLines
         // tooltip
         // lines, zoom
         this.loading = new Loading({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
@@ -61,6 +61,7 @@ class SimpleChart extends HTMLElement {
 
     update() {
         this.header.update(this.state);
+        this.navigator.update(this.state);
         this.switchers.update(this.state);
         this.loading.update(this.state);
     }
