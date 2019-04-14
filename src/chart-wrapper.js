@@ -35,6 +35,7 @@ export class ChartWrapper {
         this.axisX = new AxisX({ ...props, target: this.svgWrapper }, newState => this.setState(newState));
 
         this.axisY = new AxisY({ ...props, target: this.chartWrapper }, newState => this.setState(newState));
+        this.axisYright = new AxisY({ ...props, target: this.chartWrapper }, newState => this.setState(newState), true);
     }
 
     updatePosition(props) {
@@ -42,6 +43,7 @@ export class ChartWrapper {
     }
 
     update(newProps) {
+        this.axisYright.update(newProps);
         this.axisY.update(newProps);
         this.lines.update(newProps);
         this.axisX.update(newProps);
@@ -52,6 +54,7 @@ export class ChartWrapper {
         this.chartWrapper.style.height = `${newProps.chartHeight + 35}px`;
 
         this.axisY.init(newProps);
+        this.axisYright.init(newProps);
         this.lines.init(newProps);
         this.axisX.init(newProps);
         this.updatePosition(newProps);

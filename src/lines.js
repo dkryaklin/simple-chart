@@ -123,13 +123,12 @@ export class Lines {
         // this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
 
         this.paths = {};
-        const maxY = props.rangeMaxY;
-        let scaleY = props.chartHeight / maxY;
+        let scaleY = props.chartHeight / props.rangeMaxY;
         const scaleX = props.width / props.chartWidth;
 
-        props.lines.forEach((line) => {
-            if (props.yScaled) {
-                scaleY = props.chartHeight / props.maxCache[line.id][0].val;
+        props.lines.forEach((line, index) => {
+            if (props.yScaled && index === props.lines.length - 1) {
+                scaleY = props.chartHeight / props.yScaledRangeMaxY;
             }
 
             const path = DomHelper.svg('path', this.svg, 'line-svg-path');
@@ -156,13 +155,12 @@ export class Lines {
     updateScale(props) {
         this.svg.setAttribute('width', props.chartWidth);
 
-        const maxY = props.rangeMaxY;
-        let scaleY = props.chartHeight / maxY;
+        let scaleY = props.chartHeight / props.rangeMaxY;
         const scaleX = props.width / props.chartWidth;
 
-        props.lines.forEach((line) => {
-            if (props.yScaled) {
-                scaleY = props.chartHeight / props.maxCache[line.id][0].val;
+        props.lines.forEach((line, index) => {
+            if (props.yScaled && index === props.lines.length - 1) {
+                scaleY = props.chartHeight / props.yScaledRangeMaxY;
             }
 
             const { path } = this.paths[line.id];

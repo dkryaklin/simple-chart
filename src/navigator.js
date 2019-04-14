@@ -201,12 +201,11 @@ export class Navigator {
         this.svg.setAttribute('height', NAV_HEIGHT);
 
         this.paths = {};
-        const maxY = props.allMaxY;
-        let scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / maxY;
+        let scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.allMaxY;
 
-        props.lines.forEach((line) => {
-            if (props.yScaled) {
-                scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.maxCache[line.id][0].val;
+        props.lines.forEach((line, index) => {
+            if (props.yScaled && index === props.lines.length - 1) {
+                scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
             }
 
             const path = DomHelper.svg('path', this.svg, 'nav-svg-path');

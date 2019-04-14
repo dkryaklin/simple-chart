@@ -22,6 +22,10 @@ const STYLES = `
         font-size: 9px;
         color: #8E8E93;
     }
+    .axis-y-item.--right {
+        text-align: end;
+        border-bottom: 1px solid rgba(24, 45, 59, 0.05);
+    }
     .axis-y-items {
         position: absolute;
         left: 0;
@@ -60,7 +64,8 @@ const STYLES = `
 `;
 
 export class AxisY {
-    constructor(props, setProps) {
+    constructor(props, setProps, isRight) {
+        this.isRight = isRight;
         this.setProps = setProps;
 
         DomHelper.style(props.shadow, STYLES);
@@ -82,23 +87,23 @@ export class AxisY {
                 value = `${Math.round(value)}`;
             }
 
-            const axisItem = DomHelper.div('axis-y-item', axisItems, value);
+            const axisItem = this.createItem(props, axisItems, value);
             axisItem.style.bottom = i * blockHeight;
         }
     }
 
-    init(newProps) {
-        this.maxY = newProps.rangeMaxY;
-
-        const item0 = DomHelper.div('axis-y-item', this.axisY, '0');
-        item0.style.bottom = 0;
-
-        this.axisItems = DomHelper.div('axis-y-items', this.axisY);
-        this.fillItems(this.axisItems, newProps);
+    createItem(props, target, value) {
+        const item = DomHelper.div(`axis-y-item${this.isRight ? ' --right' : ''}`, target, value);
+        if (props.yScaled && !this.isRight) {
+            item.style.color = props.lines[0].color;
+        } else if (props.yScaled) {
+            item.style.color = props.lines[props.lines.length - 1].color;
+        }
+        return item;
     }
 
     updateAxis(props) {
-        const maxY = props.rangeMaxY;
+        const maxY = !this.isRight ? props.rangeMaxY : props.yScaledRangeMaxY;
         if (maxY === this.maxY) {
             return;
         }
@@ -134,5 +139,20 @@ export class AxisY {
         this.timeout = setTimeout(() => {
             this.updateAxis(newProps);
         }, 50);
+    }
+
+    init(newProps) {
+        if (this.isRight && !newProps.yScaled) {
+            this.axisY.classList.add('--off');
+            return;
+        }
+
+        this.maxY = !this.isRight ? newProps.rangeMaxY : newProps.yScaledRangeMaxY;
+
+        const item0 = this.createItem(newProps, this.axisY, '0');
+        item0.style.bottom = 0;
+
+        this.axisItems = DomHelper.div('axis-y-items', this.axisY);
+        this.fillItems(this.axisItems, newProps);
     }
 }

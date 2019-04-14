@@ -66,9 +66,25 @@ class SimpleChart extends HTMLElement {
 
         let rangeMaxY = 0;
         const allMaxY = [];
-        this.state.lines.forEach((line) => {
+
+        let yScaledRangeMaxY = 0;
+        let yScaledAllMaxY = 0;
+        this.state.lines.forEach((line, index) => {
             if (this.state.hiddenLines.indexOf(line.id) === -1) {
                 const maxCacheLine = this.state.maxCache[line.id];
+
+                if (this.state.yScaled && index === this.state.lines.length - 1) {
+                    yScaledAllMaxY = maxCacheLine[0].val;
+                    for (let i = 0; i < maxCacheLine.length; i += 1) {
+                        const item = maxCacheLine[i];
+                        if (item.i >= startIndex && item.i <= endIndex) {
+                            yScaledRangeMaxY = item.val;
+                            break;
+                        }
+                    }
+                    return;
+                }
+
                 allMaxY.push(maxCacheLine[0].val);
                 for (let i = 0; i < maxCacheLine.length; i += 1) {
                     const item = maxCacheLine[i];
@@ -85,6 +101,9 @@ class SimpleChart extends HTMLElement {
 
         this.state.rangeMaxY = rangeMaxY;
         this.state.allMaxY = Math.max(...allMaxY);
+
+        this.state.yScaledRangeMaxY = yScaledRangeMaxY;
+        this.state.yScaledAllMaxY = yScaledAllMaxY;
     }
 
     update(newState) {
