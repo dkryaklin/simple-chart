@@ -10,6 +10,7 @@ const STYLES = `
         display: flex;
         font-weight: 600;
         align-items: center;
+        min-height: 50px;
     }
     .header.--zoomed > .header-title {
         opacity: 0;
@@ -95,7 +96,7 @@ export class Header {
     }
 
     render(props) {
-        DomHelper.div('header-title', this.header, props.title);
+        this.title = DomHelper.div('header-title', this.header, props.title);
         const headerZoom = DomHelper.div('header-zoom', this.header, `${SEARCH_ICON}Zoom out`);
         headerZoom.onclick = () => this.zoomOut();
 

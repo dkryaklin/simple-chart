@@ -11,7 +11,7 @@ body {
 
 .chart {
     width: 400px;
-    height: 500px;
+    height: auto;
     overflow:hidden;
 }
 

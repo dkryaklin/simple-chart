@@ -7,7 +7,6 @@ import { ChartWrapper } from './chart-wrapper';
 
 const STYLES = `
     .chart{
-        height: 100%;
         overflow: hidden;
         font-family: 'Open Sans', sans-serif;
         padding: 0 16px;
@@ -23,12 +22,11 @@ class SimpleChart extends HTMLElement {
         super();
 
         this.state = {
-            title: 'Followers',
             isZoomed: false,
             timeLine: [],
             zoomTimeLine: null,
-            startRange: 70,
-            endRange: 90,
+            startRange: 80,
+            endRange: 100,
             chartIndent: 16,
             isLoading: true,
             lines: [],
@@ -138,12 +136,12 @@ class SimpleChart extends HTMLElement {
             });
         }
 
-        if (this.state.stacked) {
-            this.state.rangeMaxY = rangeMaxY;
-            this.state.allMaxY = allMaxY;
-        } else if (this.state.percentage) {
+        if (this.state.percentage) {
             this.state.rangeMaxY = 1;
             this.state.allMaxY = 1;
+        } else if (this.state.stacked) {
+            this.state.rangeMaxY = rangeMaxY;
+            this.state.allMaxY = allMaxY;
         } else {
             this.state.rangeMaxY = rangeMaxY;
             this.state.allMaxY = Math.max(...allMaxY);
@@ -259,6 +257,7 @@ class SimpleChart extends HTMLElement {
         const dataUrl = this.getAttribute('url');
         const width = parseInt(this.getAttribute('width'), 10);
         const height = parseInt(this.getAttribute('height'), 10);
+        const title = this.getAttribute('title');
 
         fetch(`${dataUrl}/overview.json`).then(response => response.json()).then((data) => {
             const newState = {
@@ -269,6 +268,7 @@ class SimpleChart extends HTMLElement {
                 yScaled: data.y_scaled,
                 percentage: data.percentage,
                 stacked: data.stacked,
+                title,
             };
 
             data.columns.forEach((column) => {
@@ -290,7 +290,7 @@ class SimpleChart extends HTMLElement {
 
             newState.scaleRange = (this.state.endRange - this.state.startRange) / 100;
             newState.chartWidth = newState.width / newState.scaleRange;
-            newState.chartHeight = newState.height - 50 - 35 - 40 - 65;
+            newState.chartHeight = newState.height;
             newState.left = newState.chartWidth * this.state.startRange / 100;
 
             this.init({ ...newState, isLoading: false });

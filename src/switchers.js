@@ -6,6 +6,7 @@ const STYLES = `
     .switchers {
         margin-top: 17px;
         display: flex;
+        flex-wrap: wrap;
     }
     .switcher {
         height: 36px;
