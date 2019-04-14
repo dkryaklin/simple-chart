@@ -60,33 +60,33 @@ const STYLES = `
     }
     .nav-click-left, .nav-click-right {
         position: absolute;
-        left: -40px;
+        left: -30px;
         width: 40px;
         top: 0;
         height: 100%;
     }
     .nav-click-right {
         left: auto;
-        right: -40px;
+        right: -30px;
     }
     .nav-svg-wrapper {
         position: absolute;
         left: 0;
-        top: 1;
+        top: 1px;
         width: 100%;
         height: ${NAV_HEIGHT_INNER}px;
         overflow: hidden;
+        transform: scale(1, -1);
     }
     .nav-svg-path {
+        vector-effect: non-scaling-stroke;
         fill: none;
         stroke-width: ${NAV_STROKE_WIDTH};
         opacity: 1;
-        transform: translateY(0);
-        transition: 0.2s d, 0.2s transform, 0.2s opacity;
+        transition: 0.2s opacity;
     }
     .nav-svg-path.--off {
         opacity: 0;
-        transform: translateY(-30px);
     }
 `;
 
@@ -174,61 +174,23 @@ export class Navigator {
             newProps = { startRange: newStartRange, endRange: newEndRange };
         }
 
+        if (newProps.startRange === this.clickProps.startRange && newProps.endRange === this.clickProps.endRange) {
+            return;
+        }
+
         newProps.scaleRange = (newProps.endRange - newProps.startRange) / 100;
         newProps.chartWidth = this.clickProps.width / newProps.scaleRange;
         newProps.left = newProps.chartWidth * newProps.startRange / 100;
-   
+
         this.setProps(newProps);
     }
 
     hiddenLines(props) {
-        this.generatePaths(props);
-
         props.lines.forEach((line) => {
             if (props.hiddenLines.indexOf(line.id) > -1) {
                 this.paths[line.id].path.classList.add('--off');
             } else {
                 this.paths[line.id].path.classList.remove('--off');
-            }
-        });
-
-        this.updatePaths(props);
-    }
-
-    generatePaths(props) {
-        let maxY = 0;
-        props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                const max = Math.max(...line.column);
-                if (max > maxY) {
-                    maxY = max;
-                }
-            }
-        });
-        if (maxY === this.maxY) {
-            return;
-        }
-
-        this.maxY = maxY;
-
-        this.pathsStr = {};
-
-        const scaleX = props.width / (props.timeLine.length - 1);
-        const scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / maxY;
-
-        props.lines.forEach((line) => {
-            let pathStr = `M0 ${NAV_HEIGHT - line.column[0] * scaleY}`;
-            for (let i = 1; i < line.column.length; i += 1) {
-                pathStr += ` L ${i * scaleX} ${NAV_HEIGHT - line.column[i] * scaleY}`;
-            }
-            this.pathsStr[line.id] = { pathStr };
-        });
-    }
-
-    updatePaths(props) {
-        props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                this.paths[line.id].path.setAttribute('d', this.pathsStr[line.id].pathStr);
             }
         });
     }
@@ -238,14 +200,19 @@ export class Navigator {
         this.svg.setAttribute('width', props.width);
         this.svg.setAttribute('height', NAV_HEIGHT);
 
-        this.generatePaths(props);
-
         this.paths = {};
+        const maxY = props.allMaxY;
+        let scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / maxY;
 
         props.lines.forEach((line) => {
+            if (props.yScaled) {
+                scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.maxCache[line.id][0].val;
+            }
+
             const path = DomHelper.svg('path', this.svg, 'nav-svg-path');
 
-            path.setAttribute('d', this.pathsStr[line.id].pathStr);
+            path.setAttribute('d', line.path);
+            path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
             path.setAttribute('stroke', line.color);
 
             this.paths[line.id] = { path };

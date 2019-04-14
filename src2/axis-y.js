@@ -67,24 +67,6 @@ export class AxisY {
         this.axisY = DomHelper.div('axis-y', props.target);
     }
 
-    getMax(props) {
-        const startIndex = Math.floor(props.timeLine.length * props.startRange / 100);
-        const endIndex = Math.ceil(props.timeLine.length * props.endRange / 100);
-
-        let maxY = 0;
-        props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                for (let i = startIndex; i <= endIndex; i += 1) {
-                    if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
-                        maxY = line.column[i];
-                    }
-                }
-            }
-        });
-
-        return maxY;
-    }
-
     fillItems(axisItems, props) {
         const blockHeight = (props.chartHeight - 20) / 5;
         const scaleY = props.chartHeight / this.maxY;
@@ -106,7 +88,7 @@ export class AxisY {
     }
 
     init(newProps) {
-        this.maxY = this.getMax(newProps);
+        this.maxY = newProps.rangeMaxY;
 
         const item0 = DomHelper.div('axis-y-item', this.axisY, '0');
         item0.style.bottom = 0;
@@ -116,7 +98,7 @@ export class AxisY {
     }
 
     updateAxis(props) {
-        const maxY = this.getMax(props);
+        const maxY = props.rangeMaxY;
         if (maxY === this.maxY) {
             return;
         }

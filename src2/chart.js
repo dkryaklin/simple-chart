@@ -51,11 +51,49 @@ class SimpleChart extends HTMLElement {
         this.loading = new Loading({ shadow: this.shadow, target: this.chart, ...this.state }, newState => this.setState(newState));
     }
 
+    createCache() {
+        this.state.maxCache = {};
+        this.state.lines.forEach((line) => {
+            const mapped = line.column.map((val, i) => ({ val, i }));
+            mapped.sort((a, b) => b.val - a.val);
+            this.state.maxCache[line.id] = mapped;
+        });
+    }
+
+    calculate() {
+        const startIndex = Math.floor(this.state.timeLine.length * this.state.startRange / 100);
+        const endIndex = Math.ceil(this.state.timeLine.length * this.state.endRange / 100);
+
+        let rangeMaxY = 0;
+        const allMaxY = [];
+        this.state.lines.forEach((line) => {
+            if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                const maxCacheLine = this.state.maxCache[line.id];
+                allMaxY.push(maxCacheLine[0].val);
+                for (let i = 0; i < maxCacheLine.length; i += 1) {
+                    const item = maxCacheLine[i];
+                    if (item.val < rangeMaxY) {
+                        break;
+                    }
+
+                    if (item.i >= startIndex && item.i <= endIndex && rangeMaxY < item.val) {
+                        rangeMaxY = item.val;
+                    }
+                }
+            }
+        });
+
+        this.state.rangeMaxY = rangeMaxY;
+        this.state.allMaxY = Math.max(...allMaxY);
+    }
+
     update(newState) {
         this.state = { ...this.state, ...newState };
         if (!this.inited) {
             return;
         }
+
+        this.calculate();
 
         this.header.update(this.state);
         this.chartWrapper.update(this.state);
@@ -66,6 +104,12 @@ class SimpleChart extends HTMLElement {
 
     init(newState) {
         this.state = { ...this.state, ...newState };
+
+        this.createCache();
+        this.calculate();
+
+        this.state.lines = this.state.lines.map(line => ({ ...line, ...this.generatePath(this.state, line) }));
+
         this.header.init(this.state);
         this.chartWrapper.init(this.state);
         this.navigator.init(this.state);
@@ -77,6 +121,24 @@ class SimpleChart extends HTMLElement {
 
     setState(newState) {
         this.update(newState);
+    }
+
+    generatePath(state, line) {
+        const scaleX = state.width / (state.timeLine.length - 1);
+
+        let fixScaleY = 1;
+        if (line.column[0] > 1000000) {
+            fixScaleY = 1000000;
+        } else if (line.column[0] > 1000) {
+            fixScaleY = 1000;
+        }
+
+        let path = `M0 ${line.column[0] / fixScaleY}`;
+        for (let i = 1; i < line.column.length; i += 1) {
+            path += ` L ${i * scaleX} ${line.column[i] / fixScaleY}`;
+        }
+
+        return { path, fixScaleY };
     }
 
     connectedCallback() {
@@ -92,6 +154,7 @@ class SimpleChart extends HTMLElement {
                 dataUrl,
                 width: width - this.state.chartIndent * 2,
                 height,
+                yScaled: data.y_scaled,
             };
 
             data.columns.forEach((column) => {

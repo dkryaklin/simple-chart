@@ -1,19 +1,23 @@
 import { DomHelper } from './helpers';
+import { timeout } from 'q';
 
 const STROKE_WIDTH = 3;
 
 const STYLES = `
+    .lines-svg {
+        transform: scale(1, -1);
+    }
     .line-svg-path {
         vector-effect: non-scaling-stroke;
         fill: none;
         opacity: 1;
         stroke-width: ${STROKE_WIDTH};
         // transform: translateY(0);
-        transition: 0.2s d, 0.2s transform, 0.2s opacity;
+        transition: 0.2s opacity;
     }
     .line-svg-path.--off {
         opacity: 0;
-        // transform: translateY(-30px);
+        // transform: translateY(30px);
     }
     .header {
         position: relative;
@@ -102,79 +106,39 @@ export class Lines {
         this.target = props.target;
 
         DomHelper.style(props.shadow, STYLES);
-        this.svg = DomHelper.svg('svg', this.target);
+        this.svg = DomHelper.svg('svg', this.target, 'lines-svg');
     }
 
     render(props) {
         this.svg.setAttribute('width', props.chartWidth);
         this.svg.setAttribute('height', props.chartHeight);
-        this.svg.setAttribute('preserveAspectRatio', 'none');
 
-        this.generatePaths(props);
+        // const scaleY = maxY / this.maxY;
+        // const viewBoxHeight = props.chartHeight * scaleY;
+
+        // this.prevValueTop = props.chartHeight - viewBoxHeight;
+        // this.prevValueHeight = props.chartHeight * scaleY;
+        // this.keyIndex = 0;
+
+        // this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
 
         this.paths = {};
+        const maxY = props.rangeMaxY;
+        let scaleY = props.chartHeight / maxY;
+        const scaleX = props.width / props.chartWidth;
 
-        const startIndex = Math.floor(props.timeLine.length * props.startRange / 100);
-        const endIndex = Math.ceil(props.timeLine.length * props.endRange / 100);
-
-        let maxY = 0;
         props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                for (let i = startIndex; i <= endIndex; i += 1) {
-                    if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
-                        maxY = line.column[i];
-                    }
-                }
+            if (props.yScaled) {
+                scaleY = props.chartHeight / props.maxCache[line.id][0].val;
             }
-        });
 
-        const scaleY = maxY / this.maxY;
-        const viewBoxHeight = props.chartHeight * scaleY;
-
-        this.prevValueTop = props.chartHeight - viewBoxHeight;
-        this.prevValueHeight = props.chartHeight * scaleY;
-        this.keyIndex = 0;
-
-        this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
-
-        props.lines.forEach((line) => {
             const path = DomHelper.svg('path', this.svg, 'line-svg-path');
 
-            path.setAttribute('d', this.pathsStr[line.id].pathStr);
+            path.setAttribute('d', line.path);
+            path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
             path.setAttribute('stroke', line.color);
 
             this.paths[line.id] = { path };
-        });
-    }
-
-    generatePaths(props) {
-        let maxY = 0;
-        props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                const max = Math.max(...line.column);
-                if (max > maxY) {
-                    maxY = max;
-                }
-            }
-        });
-
-        if (maxY === this.maxY) {
-            return;
-        }
-
-        this.maxY = maxY;
-
-        this.pathsStr = {};
-
-        const scaleX = props.width / (props.timeLine.length - 1);
-        const scaleY = (props.chartHeight - 3) / maxY;
-
-        props.lines.forEach((line) => {
-            let pathStr = `M0 ${props.chartHeight - line.column[0] * scaleY}`;
-            for (let i = 1; i < line.column.length; i += 1) {
-                pathStr += ` L ${i * scaleX} ${props.chartHeight - line.column[i] * scaleY}`;
-            }
-            this.pathsStr[line.id] = { pathStr };
         });
     }
 
@@ -189,56 +153,73 @@ export class Lines {
         });
     }
 
-    updateViewBox(props) {
-        const startIndex = Math.floor(props.timeLine.length * props.startRange / 100);
-        const endIndex = Math.ceil(props.timeLine.length * props.endRange / 100);
-
-        let maxY = 0;
-        props.lines.forEach((line) => {
-            if (props.hiddenLines.indexOf(line.id) === -1) {
-                for (let i = startIndex; i <= endIndex; i += 1) {
-                    if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
-                        maxY = line.column[i];
-                    }
-                }
-            }
-        });
-
-        const scaleY = maxY / this.maxY;
-        const viewBoxHeight = props.chartHeight * scaleY;
-
+    updateScale(props) {
         this.svg.setAttribute('width', props.chartWidth);
 
-        this.startValueTop = this.prevValueTop;
-        this.startValueHeight = this.prevValueHeight;
-        this.stepTop = (props.chartHeight - viewBoxHeight - this.prevValueTop) / 12;
-        this.stepHeight = (props.chartHeight * scaleY - this.prevValueHeight) / 12;
-        this.keyIndex += 1;
+        const maxY = props.rangeMaxY;
+        let scaleY = props.chartHeight / maxY;
+        const scaleX = props.width / props.chartWidth;
 
+        props.lines.forEach((line) => {
+            if (props.yScaled) {
+                scaleY = props.chartHeight / props.maxCache[line.id][0].val;
+            }
 
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => {
-            this.startAnimation(0, this.keyIndex, props);
-        }, 50);
-    }
-
-    startAnimation(index, key, props) {
-        if (this.keyIndex !== key || index > 11) {
-            return;
-        }
-
-        requestAnimationFrame(() => {
-            this.prevValueTop = this.startValueTop + this.stepTop * index;
-            this.prevValueHeight = this.startValueHeight + this.stepHeight * index;
-
-            this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
-            this.startAnimation(index + 1, key, props);
+            const { path } = this.paths[line.id];
+            path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
         });
     }
 
+    // updateViewBox(props) {
+    //     const startIndex = Math.floor(props.timeLine.length * props.startRange / 100);
+    //     const endIndex = Math.ceil(props.timeLine.length * props.endRange / 100);
+
+    //     let maxY = 0;
+    //     props.lines.forEach((line) => {
+    //         if (props.hiddenLines.indexOf(line.id) === -1) {
+    //             for (let i = startIndex; i <= endIndex; i += 1) {
+    //                 if (i >= 0 && i < line.column.length && maxY < line.column[i]) {
+    //                     maxY = line.column[i];
+    //                 }
+    //             }
+    //         }
+    //     });
+
+    //     const scaleY = maxY / this.maxY;
+    //     const viewBoxHeight = props.chartHeight * scaleY;
+
+    //     this.svg.setAttribute('width', props.chartWidth);
+
+    //     this.startValueTop = this.prevValueTop;
+    //     this.startValueHeight = this.prevValueHeight;
+    //     this.stepTop = (props.chartHeight - viewBoxHeight - this.prevValueTop) / 12;
+    //     this.stepHeight = (props.chartHeight * scaleY - this.prevValueHeight) / 12;
+    //     this.keyIndex += 1;
+
+
+    //     clearTimeout(this.timeout);
+    //     this.timeout = setTimeout(() => {
+    //         this.startAnimation(0, this.keyIndex, props);
+    //     }, 50);
+    // }
+
+    // startAnimation(index, key, props) {
+    //     if (this.keyIndex !== key || index > 11) {
+    //         return;
+    //     }
+
+    //     requestAnimationFrame(() => {
+    //         this.prevValueTop = this.startValueTop + this.stepTop * index;
+    //         this.prevValueHeight = this.startValueHeight + this.stepHeight * index;
+
+    //         this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
+    //         this.startAnimation(index + 1, key, props);
+    //     });
+    // }
+
     update(newProps) {
+        this.updateScale(newProps);
         this.hiddenLines(newProps);
-        this.updateViewBox(newProps);
     }
 
     init(newProps) {

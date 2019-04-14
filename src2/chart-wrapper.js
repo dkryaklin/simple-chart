@@ -14,6 +14,8 @@ const STYLES = `
         top: 0;
         right: 0;
         bottom: 0;
+
+        will-change:transform;
     }
 `;
 
@@ -36,7 +38,7 @@ export class ChartWrapper {
     }
 
     updatePosition(props) {
-        this.svgWrapper.style.transform = `translateX(${-props.left + 16}px)`;
+        this.svgWrapper.style.transform = `translateX(${-props.left + 16}px) translate3d(0,0,0)`;
     }
 
     update(newProps) {
