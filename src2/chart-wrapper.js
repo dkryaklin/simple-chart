@@ -47,7 +47,7 @@ export class ChartWrapper {
     }
 
     init(newProps) {
-        this.chartWrapper.style.height = `${newProps.chartHeight}px`;
+        this.chartWrapper.style.height = `${newProps.chartHeight + 35}px`;
 
         this.axisY.init(newProps);
         this.lines.init(newProps);

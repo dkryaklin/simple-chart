@@ -113,7 +113,7 @@ class SimpleChart extends HTMLElement {
 
             newState.scaleRange = (this.state.endRange - this.state.startRange) / 100;
             newState.chartWidth = newState.width / newState.scaleRange;
-            newState.chartHeight = newState.height - 35 - 40 - 65 - 50;
+            newState.chartHeight = newState.height - 50 - 35 - 40 - 65;
             newState.left = newState.chartWidth * this.state.startRange / 100;
 
             console.log(newState);
