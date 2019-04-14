@@ -1,5 +1,4 @@
 import { DomHelper } from './helpers';
-import { timeout } from 'q';
 
 const STROKE_WIDTH = 3;
 
@@ -9,7 +8,6 @@ const STYLES = `
     }
     .line-svg-path {
         vector-effect: non-scaling-stroke;
-        fill: none;
         opacity: 1;
         stroke-width: ${STROKE_WIDTH};
         // transform: translateY(0);
@@ -126,7 +124,12 @@ export class Lines {
         let scaleY = props.chartHeight / props.rangeMaxY;
         const scaleX = props.width / props.chartWidth;
 
-        props.lines.forEach((line, index) => {
+        for (let index = 0; index < props.lines.length; index += 1) {
+            let line = props.lines[index];
+            if (props.stacked || props.percentage) {
+                line = props.lines[props.lines.length - 1 - index];
+            }
+
             if (props.yScaled && index === props.lines.length - 1) {
                 scaleY = props.chartHeight / props.yScaledRangeMaxY;
             }
@@ -137,8 +140,14 @@ export class Lines {
             path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
             path.setAttribute('stroke', line.color);
 
+            if (line.type === 'area' || line.type === 'bar') {
+                path.setAttribute('fill', line.color);
+            } else {
+                path.setAttribute('fill', 'none');
+            }
+
             this.paths[line.id] = { path };
-        });
+        }
     }
 
     hiddenLines(props) {
@@ -159,12 +168,15 @@ export class Lines {
         const scaleX = props.width / props.chartWidth;
 
         props.lines.forEach((line, index) => {
-            if (props.yScaled && index === props.lines.length - 1) {
-                scaleY = props.chartHeight / props.yScaledRangeMaxY;
-            }
+            if (props.hiddenLines.indexOf(line.id) === -1) {
+                if (props.yScaled && index === props.lines.length - 1) {
+                    scaleY = props.chartHeight / props.yScaledRangeMaxY;
+                }
 
-            const { path } = this.paths[line.id];
-            path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+                const { path } = this.paths[line.id];
+                path.setAttribute('d', line.path);
+                path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+            }
         });
     }
 

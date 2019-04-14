@@ -61,58 +61,116 @@ class SimpleChart extends HTMLElement {
     }
 
     calculate() {
+        if (this.state.percentage || this.state.stacked) {
+            if (!this.allColumnDataCache) {
+                this.allColumnDataCache = [];
+            }
+
+            const key = `key${this.state.hiddenLines.join('')}`;
+            if (!this.allColumnDataCache[key]) {
+                const allColumnData = [];
+                this.state.lines.forEach((line) => {
+                    if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                        for (let i = 0; i < line.column.length; i += 1) {
+                            if (!allColumnData[i]) {
+                                allColumnData[i] = line.column[i];
+                            } else {
+                                allColumnData[i] += line.column[i];
+                            }
+                        }
+                    }
+                });
+
+                this.allColumnDataCache[key] = allColumnData;
+            }
+
+            this.state.allColumnData = this.allColumnDataCache[key];
+        }
+
         const startIndex = Math.floor(this.state.timeLine.length * this.state.startRange / 100);
         const endIndex = Math.ceil(this.state.timeLine.length * this.state.endRange / 100);
 
         let rangeMaxY = 0;
-        const allMaxY = [];
+        let allMaxY = [];
 
         let yScaledRangeMaxY = 0;
         let yScaledAllMaxY = 0;
-        this.state.lines.forEach((line, index) => {
-            if (this.state.hiddenLines.indexOf(line.id) === -1) {
-                const maxCacheLine = this.state.maxCache[line.id];
 
-                if (this.state.yScaled && index === this.state.lines.length - 1) {
-                    yScaledAllMaxY = maxCacheLine[0].val;
-                    for (let i = 0; i < maxCacheLine.length; i += 1) {
-                        const item = maxCacheLine[i];
-                        if (item.i >= startIndex && item.i <= endIndex) {
-                            yScaledRangeMaxY = item.val;
-                            break;
-                        }
-                    }
-                    return;
+        if (this.state.stacked) {
+            allMaxY = 0;
+            for (let i = 0; i < this.state.allColumnData.length; i += 1) {
+                if (i >= startIndex && i <= endIndex && this.state.allColumnData[i] > rangeMaxY) {
+                    rangeMaxY = this.state.allColumnData[i];
                 }
-
-                allMaxY.push(maxCacheLine[0].val);
-                for (let i = 0; i < maxCacheLine.length; i += 1) {
-                    const item = maxCacheLine[i];
-                    if (item.val < rangeMaxY) {
-                        break;
-                    }
-
-                    if (item.i >= startIndex && item.i <= endIndex && rangeMaxY < item.val) {
-                        rangeMaxY = item.val;
-                    }
+                if (this.state.allColumnData[i] > allMaxY) {
+                    allMaxY = this.state.allColumnData[i];
                 }
             }
-        });
+        } else {
+            this.state.lines.forEach((line, index) => {
+                if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                    const maxCacheLine = this.state.maxCache[line.id];
 
-        this.state.rangeMaxY = rangeMaxY;
-        this.state.allMaxY = Math.max(...allMaxY);
+                    if (this.state.yScaled && index === this.state.lines.length - 1) {
+                        yScaledAllMaxY = maxCacheLine[0].val;
+                        for (let i = 0; i < maxCacheLine.length; i += 1) {
+                            const item = maxCacheLine[i];
+                            if (item.i >= startIndex && item.i <= endIndex) {
+                                yScaledRangeMaxY = item.val;
+                                break;
+                            }
+                        }
+                        return;
+                    }
+
+                    allMaxY.push(maxCacheLine[0].val);
+                    for (let i = 0; i < maxCacheLine.length; i += 1) {
+                        const item = maxCacheLine[i];
+                        if (item.val < rangeMaxY) {
+                            break;
+                        }
+
+                        if (item.i >= startIndex && item.i <= endIndex && rangeMaxY < item.val) {
+                            rangeMaxY = item.val;
+                        }
+                    }
+                }
+            });
+        }
+
+        if (this.state.stacked) {
+            this.state.rangeMaxY = rangeMaxY;
+            this.state.allMaxY = allMaxY;
+        } else if (this.state.percentage) {
+            this.state.rangeMaxY = 1;
+            this.state.allMaxY = 1;
+        } else {
+            this.state.rangeMaxY = rangeMaxY;
+            this.state.allMaxY = Math.max(...allMaxY);
+        }
 
         this.state.yScaledRangeMaxY = yScaledRangeMaxY;
         this.state.yScaledAllMaxY = yScaledAllMaxY;
     }
 
     update(newState) {
+        const prevHiddenLines = this.state.hiddenLines;
         this.state = { ...this.state, ...newState };
         if (!this.inited) {
             return;
         }
 
         this.calculate();
+
+        if ((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) {
+            this.prevColumnsData = [];
+            this.state.lines = this.state.lines.map((line) => {
+                if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                    return { ...line, ...this.generatePath(this.state, line) };
+                }
+                return line;
+            });
+        }
 
         this.header.update(this.state);
         this.chartWrapper.update(this.state);
@@ -127,6 +185,7 @@ class SimpleChart extends HTMLElement {
         this.createCache();
         this.calculate();
 
+        this.prevColumnsData = [];
         this.state.lines = this.state.lines.map(line => ({ ...line, ...this.generatePath(this.state, line) }));
 
         this.header.init(this.state);
@@ -146,15 +205,51 @@ class SimpleChart extends HTMLElement {
         const scaleX = state.width / (state.timeLine.length - 1);
 
         let fixScaleY = 1;
-        if (line.column[0] > 1000000) {
-            fixScaleY = 1000000;
-        } else if (line.column[0] > 1000) {
-            fixScaleY = 1000;
+        if (!(state.percentage || state.stacked)) {
+            if (line.column[0] > 1000000) {
+                fixScaleY = 1000000;
+            } else if (line.column[0] > 1000) {
+                fixScaleY = 1000;
+            }
         }
 
-        let path = `M0 ${line.column[0] / fixScaleY}`;
+        let value = line.column[0] / fixScaleY;
+        if (state.percentage) {
+            value = line.column[0] / state.allColumnData[0];
+        }
+        if (state.stacked && this.prevColumnsData[0]) {
+            value += this.prevColumnsData[0];
+        }
+        this.prevColumnsData[0] = value;
+
+        let path = '';
+        if (line.type === 'area') {
+            path = `M0 0 L 0 ${value}`;
+        } else if (line.type === 'bar') {
+            path = `M0 0 L 0 ${value}`;
+        } else {
+            path = `M0 ${value}`;
+        }
+
         for (let i = 1; i < line.column.length; i += 1) {
-            path += ` L ${i * scaleX} ${line.column[i] / fixScaleY}`;
+            value = line.column[i] / fixScaleY;
+            if (state.percentage) {
+                value = line.column[i] / state.allColumnData[i];
+            }
+            if (state.stacked && this.prevColumnsData[i]) {
+                value += this.prevColumnsData[i];
+            }
+            this.prevColumnsData[i] = value;
+
+            if (line.type === 'bar') {
+                path += ` L ${i * scaleX} ${this.prevColumnsData[i - 1]} L ${i * scaleX} ${value}`;
+            } else {
+                path += ` L ${i * scaleX} ${value}`;
+            }
+        }
+
+        if (line.type === 'area' || line.type === 'bar') {
+            path += ` L ${(line.column.length - 1) * scaleX} 0`;
         }
 
         return { path, fixScaleY };
@@ -166,14 +261,14 @@ class SimpleChart extends HTMLElement {
         const height = parseInt(this.getAttribute('height'), 10);
 
         fetch(`${dataUrl}/overview.json`).then(response => response.json()).then((data) => {
-            console.log(data);
-
             const newState = {
                 lines: [],
                 dataUrl,
                 width: width - this.state.chartIndent * 2,
                 height,
                 yScaled: data.y_scaled,
+                percentage: data.percentage,
+                stacked: data.stacked,
             };
 
             data.columns.forEach((column) => {
@@ -197,8 +292,6 @@ class SimpleChart extends HTMLElement {
             newState.chartWidth = newState.width / newState.scaleRange;
             newState.chartHeight = newState.height - 50 - 35 - 40 - 65;
             newState.left = newState.chartWidth * this.state.startRange / 100;
-
-            console.log(newState);
 
             this.init({ ...newState, isLoading: false });
         });

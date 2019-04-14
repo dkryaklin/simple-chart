@@ -102,8 +102,22 @@ export class AxisY {
         return item;
     }
 
-    updateAxis(props) {
-        const maxY = !this.isRight ? props.rangeMaxY : props.yScaledRangeMaxY;
+    updateAxis(props, isUp) {
+        const axisItems = DomHelper.div(`axis-y-items ${isUp ? '--show-up' : '--show-down'}`, this.axisY);
+        this.fillItems(axisItems, props);
+
+        this.axisItems.addEventListener('animationend', () => {
+            this.axisY.removeChild(this.axisItems);
+            this.axisItems = axisItems;
+        });
+
+        this.axisItems.classList.add(!isUp ? '--hide-up' : '--hide-down');
+    }
+
+    update(newProps) {
+        clearTimeout(this.timeout);
+
+        const maxY = !this.isRight ? newProps.rangeMaxY : newProps.yScaledRangeMaxY;
         if (maxY === this.maxY) {
             return;
         }
@@ -123,21 +137,8 @@ export class AxisY {
             return;
         }
 
-        const axisItems = DomHelper.div(`axis-y-items ${isUp ? '--show-up' : '--show-down'}`, this.axisY);
-        this.fillItems(axisItems, props);
-
-        this.axisItems.addEventListener('animationend', () => {
-            this.axisY.removeChild(this.axisItems);
-            this.axisItems = axisItems;
-        });
-
-        this.axisItems.classList.add(!isUp ? '--hide-up' : '--hide-down');
-    }
-
-    update(newProps) {
-        clearTimeout(this.timeout);
         this.timeout = setTimeout(() => {
-            this.updateAxis(newProps);
+            this.updateAxis(newProps, isUp);
         }, 50);
     }
 

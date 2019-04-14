@@ -70,6 +70,8 @@ const STYLES = `
         right: -30px;
     }
     .nav-svg-wrapper {
+        border-radius: 5px;
+        overflow: hidden;
         position: absolute;
         left: 0;
         top: 1px;
@@ -80,7 +82,6 @@ const STYLES = `
     }
     .nav-svg-path {
         vector-effect: non-scaling-stroke;
-        fill: none;
         stroke-width: ${NAV_STROKE_WIDTH};
         opacity: 1;
         transition: 0.2s opacity;
@@ -203,7 +204,12 @@ export class Navigator {
         this.paths = {};
         let scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.allMaxY;
 
-        props.lines.forEach((line, index) => {
+        for (let index = 0; index < props.lines.length; index += 1) {
+            let line = props.lines[index];
+            if (props.stacked || props.percentage) {
+                line = props.lines[props.lines.length - 1 - index];
+            }
+
             if (props.yScaled && index === props.lines.length - 1) {
                 scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
             }
@@ -214,8 +220,17 @@ export class Navigator {
             path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
             path.setAttribute('stroke', line.color);
 
+            if (line.type === 'area' || line.type === 'bar') {
+                path.setAttribute('fill', line.color);
+            } else {
+                path.setAttribute('fill', 'none');
+            }
+
             this.paths[line.id] = { path };
-        });
+        }
+
+        this.navWrapper.style.transform = `translateX(-${100 - props.startRange}%)`;
+        this.navSelector.style.width = `calc(${props.endRange - props.startRange}% - 20px)`;
     }
 
     render() {
@@ -241,6 +256,18 @@ export class Navigator {
     range(props) {
         this.navWrapper.style.transform = `translateX(-${100 - props.startRange}%)`;
         this.navSelector.style.width = `calc(${props.endRange - props.startRange}% - 20px)`;
+
+        const scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.allMaxY;
+
+        if (props.stacked || props.percentage) {
+            for (let index = 0; index < props.lines.length; index += 1) {
+                const line = props.lines[props.lines.length - 1 - index];
+                if (props.hiddenLines.indexOf(line.id) === -1) {
+                    this.paths[line.id].path.setAttribute('d', line.path);
+                    this.paths[line.id].path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
+                }
+            }
+        }
     }
 
     update(newProps) {
@@ -251,7 +278,6 @@ export class Navigator {
 
     init(newProps) {
         this.render();
-        this.range(newProps);
         this.renderLines(newProps);
         this.props = newProps;
     }
