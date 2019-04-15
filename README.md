@@ -1,5 +1,7 @@
 # simple-chart
 
+Demo: https://dkryaklin.github.io/simple-chart/
+
 ~~This chart was ready only on the half for stage 1 and never submitted.
 For stage 2 it was rebuilt from scratch.~~
 
