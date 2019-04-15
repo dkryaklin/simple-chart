@@ -49,7 +49,7 @@ export class ChartWrapper {
 
     render(props) {
         this.svgWrapper = DomHelper.div('svg-wrapper', this.chartWrapper);
-        this.message = DomHelper.div('message', this.chartWrapper, 'Please, choose one line ¯\\_(ツ)_/¯');
+        this.message = DomHelper.div('message', this.chartWrapper, 'Please, choose at least the one line ¯\\_(ツ)_/¯');
         this.lines = new Lines({ ...props, target: this.svgWrapper }, newState => this.setProps(newState));
         this.axisX = new AxisX({ ...props, target: this.svgWrapper }, newState => this.setProps(newState));
         this.axisY = new AxisY({ ...props, target: this.chartWrapper }, newState => this.setProps(newState));

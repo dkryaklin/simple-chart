@@ -80,6 +80,11 @@ const STYLES = `
         overflow: hidden;
         transform: scale(1, -1);
     }
+    .nav-svg {
+        position: absolute;
+        left: 0;
+        top: 1px;
+    }
     .nav-svg-path {
         vector-effect: non-scaling-stroke;
         stroke-width: ${NAV_STROKE_WIDTH};
@@ -197,12 +202,12 @@ export class Navigator {
     }
 
     renderLines(props) {
-        this.svg = DomHelper.svg('svg', this.navSvgWrapper);
+        this.svg = DomHelper.svg('svg', this.navSvgWrapper, 'nav-svg');
         this.svg.setAttribute('width', props.width);
-        this.svg.setAttribute('height', NAV_HEIGHT);
+        this.svg.setAttribute('height', NAV_HEIGHT_INNER);
 
         this.paths = {};
-        let scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.allMaxY;
+        let scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.allMaxY;
 
         for (let index = 0; index < props.lines.length; index += 1) {
             let line = props.lines[index];
@@ -211,7 +216,7 @@ export class Navigator {
             }
 
             if (props.yScaled && index === props.lines.length - 1) {
-                scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
+                scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
             }
 
             const path = DomHelper.svg('path', this.svg, 'nav-svg-path');
@@ -257,11 +262,19 @@ export class Navigator {
         this.navWrapper.style.transform = `translateX(-${100 - props.startRange}%)`;
         this.navSelector.style.width = `calc(${props.endRange - props.startRange}% - 20px)`;
 
-        const scaleY = (NAV_HEIGHT - NAV_STROKE_WIDTH) / props.allMaxY;
+        let scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.allMaxY;
 
-        if (props.stacked || props.percentage) {
+        if (props.stacked || props.percentage || props.zoomInit) {
             for (let index = 0; index < props.lines.length; index += 1) {
-                const line = props.lines[props.lines.length - 1 - index];
+                let line = props.lines[index];
+                if (props.stacked || props.percentage) {
+                    line = props.lines[props.lines.length - 1 - index];
+                }
+    
+                if (props.yScaled && index === props.lines.length - 1) {
+                    scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
+                }
+
                 if (props.hiddenLines.indexOf(line.id) === -1) {
                     this.paths[line.id].path.setAttribute('d', line.path);
                     this.paths[line.id].path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);

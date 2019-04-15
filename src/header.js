@@ -116,7 +116,7 @@ export class Header {
     }
 
     range(props) {
-        const timeLine = props.isZoomed ? props.zoomTimeLine : props.timeLine;
+        const { timeLine } = props;
         if (!timeLine || !timeLine.length) {
             this.headerDays.innerHTML = null;
             return;

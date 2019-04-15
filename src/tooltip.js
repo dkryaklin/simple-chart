@@ -39,6 +39,7 @@ const STYLES = `
         margin: 6px 0;
         display: flex;
         justify-content: space-between;
+        pointer-events: none;
     }
     .tooltip-date > svg {
         width: 12px;
@@ -48,6 +49,7 @@ const STYLES = `
         display:flex;
         margin: 6px 0;
         justify-content: space-between;
+        pointer-events: none;
     }
     .tooltip-item > span.--all {
         font-weight: 600;
@@ -86,23 +88,30 @@ export class Tooltip {
 
         DomHelper.style(props.shadow, STYLES);
         this.tooltip = DomHelper.div('tooltip --off', props.target);
+
+        this.tooltip.onclick = event => this.clickTooltip(event);
     }
 
     render(props) {
         this.target.addEventListener('mouseenter', event => this.mouseEnter(event));
         this.target.addEventListener('mouseleave', event => this.mouseLeave(event));
-    
+
         this.target.addEventListener('mousemove', event => this.mouseMove(event));
         this.target.addEventListener('click', event => this.mouseClick(event));
         this.target.addEventListener('touchstart', event => this.mouseClick(event));
-        document.addEventListener('click', () => {
-            console.log('doc click');
-        });
+        document.addEventListener('click', () => this.mouseLeave());
 
         this.hover = DomHelper.div('tooltip-hover', this.target);
         if (props.lines[0].type === 'bar') {
             this.hover.classList.add('--bar');
         }
+    }
+
+    clickTooltip(event) {
+        event.stopPropagation();
+        const zoomedIndex = this.selectedIndex;
+        this.selectedIndex = null;
+        this.setProps({ zoomedIndex });
     }
 
     mouseEnter() {
@@ -123,23 +132,24 @@ export class Tooltip {
     mouseMove(event) {
         this.positions = [];
 
-        const blockWidth = this.props.chartWidth / (this.props.timeLine.length - 1);
+        if (this.props.lines[0].type === 'bar') {
+            this.amount = this.props.timeLine.length;
+        } else {
+            this.amount = this.props.timeLine.length - 1;
+        }
+
+        const blockWidth = this.props.chartWidth / this.amount;
         const clientX = event.clientX - this.chartRect.left;
 
-        let prev = this.props.chartIndent;
+        let prev = -1;
         let hoveredIndex;
-        this.positions[0] = {
-            clientX,
-            position: -this.props.left + this.props.chartIndent,
-        };
-        for (let i = 1; i < this.props.timeLine.length; i += 1) {
+        for (let i = -1; i <= this.props.timeLine.length; i += 1) {
             const position = i * blockWidth - this.props.left + this.props.chartIndent;
+            this.positions[i] = {
+                clientX,
+                position,
+            };
             if (position > 0) {
-                this.positions[i] = {
-                    clientX,
-                    position,
-                };
-
                 if (prev < clientX && clientX < position) {
                     if (Math.abs(prev - clientX) > (Math.abs(position - clientX))) {
                         hoveredIndex = i;
@@ -151,6 +161,13 @@ export class Tooltip {
             }
         }
 
+        if (hoveredIndex < 0) {
+            hoveredIndex = 0;
+        }
+        if (hoveredIndex >= this.props.timeLine.length) {
+            hoveredIndex = this.props.timeLine.length - 1;
+        }
+
         if (hoveredIndex || hoveredIndex === 0) {
             this.setProps({ hoveredIndex });
         } else {
@@ -159,7 +176,10 @@ export class Tooltip {
     }
 
     hoveredValue(props) {
-        const index = this.selectedIndex || props.hoveredIndex;
+        let index = props.hoveredIndex;
+        if (this.selectedIndex || this.selectedIndex === 0) {
+            index = this.selectedIndex;
+        }
 
         if ((!index && index !== 0) || props.hiddenLines.length === props.lines.length) {
             this.hover.classList.add('--off');
@@ -183,7 +203,12 @@ export class Tooltip {
 
         this.tooltip.innerHTML = null;
         const date = new Date(props.timeLine[index]);
-        const dateStr = `${props.daysLabels[date.getDay()].substring(0, 3)}, ${date.getDate()} ${props.monthsLabels[date.getMonth()].substring(0, 3)} ${date.getFullYear()}${ARROW_ICON}`;
+        let dateStr;
+        if (props.isZoomed) {
+            dateStr = `${date.getHours() > 9 ? date.getHours() : `0${date.getHours()}`}:${date.getMinutes() > 9 ? date.getMinutes() : `0${date.getMinutes()}`}`;
+        } else {
+            dateStr = `${props.daysLabels[date.getDay()].substring(0, 3)}, ${date.getDate()} ${props.monthsLabels[date.getMonth()].substring(0, 3)} ${date.getFullYear()}${ARROW_ICON}`;
+        }
         DomHelper.div('tooltip-date', this.tooltip, dateStr);
 
         props.lines.forEach((line) => {
@@ -202,7 +227,7 @@ export class Tooltip {
         this.hover.innerHTML = null;
         this.hover.style.left = `${this.positions[index].position}px`;
         let prevValue = 0;
-        const blockWidth = Math.ceil(props.chartWidth / (props.timeLine.length - 1)) + 1;
+        const blockWidth = Math.ceil(props.chartWidth / this.amount) + 1;
 
         props.lines.forEach((line, i) => {
             if (props.yScaled && i === props.lines.length - 1) {

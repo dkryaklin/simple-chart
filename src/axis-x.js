@@ -56,7 +56,14 @@ export class AxisX {
             if ((!prev && prev !== 0) || prev + blockWidth < position) {
                 if (!this.items[i]) {
                     const date = new Date(props.timeLine[i]);
-                    this.items[i] = DomHelper.div('axis-x-item --show', this.axisX, `${date.getDate()} ${props.monthsLabels[date.getMonth()].substring(0, 3)}`);
+                    let value;
+                    if (props.isZoomed) {
+                        value = `${date.getHours() > 9 ? date.getHours() : `0${date.getHours()}`}:${date.getMinutes() > 9 ? date.getMinutes() : `0${date.getMinutes()}`}`;
+                    } else {
+                        value = `${date.getDate()} ${props.monthsLabels[date.getMonth()].substring(0, 3)}`;
+                    }
+
+                    this.items[i] = DomHelper.div('axis-x-item --show', this.axisX, value);
                 } else {
                     this.items[i].classList.remove('--hide');
                     this.items[i].classList.add('--show');
@@ -90,6 +97,16 @@ export class AxisX {
     }
 
     update(newProps) {
+        if (newProps.zoomInit) {
+            this.axisX.innerHTML = null;
+            this.items = [];
+
+            this.blockAmount = 2;
+            while (newProps.chartWidth / this.blockAmount * 2 > 90) {
+                this.blockAmount *= 2;
+            }
+        }
+
         this.getBlockAmount(newProps);
         this.render(newProps);
     }
@@ -100,7 +117,6 @@ export class AxisX {
             this.blockAmount *= 2;
         }
         this.getBlockAmount(newProps);
-
         this.render(newProps);
     }
 }

@@ -24,7 +24,6 @@ class SimpleChart extends HTMLElement {
         this.state = {
             isZoomed: false,
             timeLine: [],
-            zoomTimeLine: null,
             startRange: 80,
             endRange: 100,
             chartIndent: 16,
@@ -160,16 +159,24 @@ class SimpleChart extends HTMLElement {
             return;
         }
 
-        this.calculate();
+        if (this.state.zoomInit) {
+            this.createCache();
+            this.calculate();
 
-        if ((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) {
             this.prevColumnsData = [];
-            this.state.lines = this.state.lines.map((line) => {
-                if (this.state.hiddenLines.indexOf(line.id) === -1) {
-                    return { ...line, ...this.generatePath(this.state, line) };
-                }
-                return line;
-            });
+            this.state.lines = this.state.lines.map(line => ({ ...line, ...this.generatePath(this.state, line) }));
+        } else {
+            this.calculate();
+
+            if ((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) {
+                this.prevColumnsData = [];
+                this.state.lines = this.state.lines.map((line) => {
+                    if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                        return { ...line, ...this.generatePath(this.state, line) };
+                    }
+                    return line;
+                });
+            }
         }
 
         this.header.update(this.state);
@@ -177,6 +184,8 @@ class SimpleChart extends HTMLElement {
         this.navigator.update(this.state);
         this.switchers.update(this.state);
         this.loading.update(this.state);
+
+        this.state.zoomInit = false;
     }
 
     init(newState) {
@@ -198,11 +207,76 @@ class SimpleChart extends HTMLElement {
     }
 
     setState(newState) {
+        if (!this.state.isZoomed && newState.zoomedIndex) {
+            this.prevState = this.state;
+            this.prevAllColumnDataCache = this.allColumnDataCache;
+
+            const zoomedDate = new Date(this.state.timeLine[newState.zoomedIndex]);
+
+            let url = this.state.dataUrl;
+            url += `/${zoomedDate.getFullYear()}-`;
+            url += `${zoomedDate.getMonth() > 8 ? zoomedDate.getMonth() + 1 : `0${zoomedDate.getMonth() + 1}`}`;
+            url += `/${zoomedDate.getDate() > 9 ? zoomedDate.getDate() : `0${zoomedDate.getDate()}`}.json`;
+
+            fetch(url).then(response => response.json()).then((data) => {
+                const newZoomedState = {
+                    zoomInit: true,
+                    isZoomed: true,
+                    startRange: 100 / 7 * 3,
+                    endRange: 100 / 7 * 4,
+                    chartIndent: 16,
+                    isLoading: false,
+                    hiddenLines: this.state.hiddenLines,
+
+                    lines: [],
+                    width: this.state.width,
+                    height: this.state.height,
+                    yScaled: data.y_scaled,
+                    percentage: data.percentage,
+                    stacked: data.stacked,
+                    title: this.state.title,
+                    hoveredIndex: null,
+                };
+
+                data.columns.forEach((column) => {
+                    if (column[0] === 'x') {
+                        newZoomedState.timeLine = column;
+                        newZoomedState.timeLine.shift();
+                    } else {
+                        const id = newZoomedState.lines.length;
+                        newZoomedState.lines.push({
+                            id: column[0],
+                            color: data.colors[column[0]],
+                            name: data.names[column[0]],
+                            column,
+                            type: data.types[column[0]],
+                        });
+                        newZoomedState.lines[id].column.shift();
+                    }
+                });
+
+                newZoomedState.scaleRange = (newZoomedState.endRange - newZoomedState.startRange) / 100;
+                newZoomedState.chartWidth = newZoomedState.width / newZoomedState.scaleRange;
+                newZoomedState.chartHeight = newZoomedState.height;
+                newZoomedState.left = newZoomedState.chartWidth * newZoomedState.startRange / 100;
+
+                this.update(newZoomedState);
+            });
+
+            // eslint-disable-next-line no-param-reassign
+            newState.isLoading = true;
+        }
+
         this.update(newState);
     }
 
     generatePath(state, line) {
-        const scaleX = state.width / (state.timeLine.length - 1);
+        let scaleX;
+        if (line.type === 'bar') {
+            scaleX = state.width / state.timeLine.length;
+        } else {
+            scaleX = state.width / (state.timeLine.length - 1);
+        }
 
         let fixScaleY = 1;
         if (!(state.percentage || state.stacked)) {
@@ -249,7 +323,8 @@ class SimpleChart extends HTMLElement {
         }
 
         if (line.type === 'area' || line.type === 'bar') {
-            path += ` L ${(line.column.length - 1) * scaleX} 0`;
+            path += ` L ${line.column.length * scaleX} ${value}`;
+            path += ` L ${line.column.length * scaleX} 0`;
         }
 
         return { path, fixScaleY };

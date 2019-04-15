@@ -117,29 +117,26 @@ export class AxisY {
     }
 
     update(newProps) {
-        clearTimeout(this.timeout);
-
-        const maxY = !this.isRight ? newProps.rangeMaxY : newProps.yScaledRangeMaxY;
-        if (maxY === this.maxY) {
+        if (this.isRight && !newProps.yScaled) {
             return;
         }
 
-        const isUp = maxY < this.maxY;
-
-        if (this.maxY === 0) {
-            this.axisY.classList.remove('--off');
-            this.maxY = maxY;
-            return;
-        }
-
-        this.maxY = maxY;
-
-        if (maxY === 0) {
+        if (newProps.lines.length === newProps.hiddenLines.length) {
             this.axisY.classList.add('--off');
-            return;
+        } else {
+            this.axisY.classList.remove('--off');
         }
 
+        clearTimeout(this.timeout);
         this.timeout = setTimeout(() => {
+            const maxY = !this.isRight ? newProps.rangeMaxY : newProps.yScaledRangeMaxY;
+            if (maxY === this.maxY) {
+                return;
+            }
+
+            const isUp = maxY < this.maxY;
+            this.maxY = maxY;
+
             this.updateAxis(newProps, isUp);
         }, 50);
     }
