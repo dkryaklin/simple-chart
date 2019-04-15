@@ -1,7 +1,5 @@
 import { DomHelper } from './helpers';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 const STYLES = `
     .axis-x {
         line-height: 25px;
@@ -17,7 +15,9 @@ const STYLES = `
         position: absolute;
         top: 0;
         left: 0;
-        width: 65px;
+        margin-left: -30px;
+        text-align: center;
+        width: 60px;
         transition: 0.2s opacity;
     }
     .axis-x-item.--show {
@@ -56,7 +56,7 @@ export class AxisX {
             if ((!prev && prev !== 0) || prev + blockWidth < position) {
                 if (!this.items[i]) {
                     const date = new Date(props.timeLine[i]);
-                    this.items[i] = DomHelper.div('axis-x-item --show', this.axisX, `${date.getDate()} ${MONTHS[date.getMonth()]}`);
+                    this.items[i] = DomHelper.div('axis-x-item --show', this.axisX, `${date.getDate()} ${props.monthsLabels[date.getMonth()].substring(0, 3)}`);
                 } else {
                     this.items[i].classList.remove('--hide');
                     this.items[i].classList.add('--show');

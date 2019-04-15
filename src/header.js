@@ -1,8 +1,6 @@
 import { DomHelper } from './helpers';
 
 const SEARCH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" style="fill: #48AAF0;" viewBox="0 0 330 330"><path d="M325.606 304.394L223.328 202.117c16.707-21.256 26.683-48.041 26.683-77.111C250.011 56.077 193.934 0 125.005 0 56.077 0 0 56.077 0 125.006 0 193.933 56.077 250.01 125.005 250.01c29.07 0 55.855-9.975 77.11-26.681l102.278 102.277c2.929 2.93 6.768 4.394 10.607 4.394s7.678-1.464 10.606-4.394c5.859-5.857 5.859-15.355 0-21.212zM30 125.006C30 72.619 72.619 30 125.005 30c52.387 0 95.006 42.619 95.006 95.005 0 52.386-42.619 95.004-95.006 95.004C72.619 220.01 30 177.391 30 125.006z"/><path d="M175.01 110.006H75c-8.284 0-15 6.716-15 15s6.716 15 15 15h100.01c8.284 0 15-6.716 15-15s-6.716-15-15-15z"/></svg>';
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const STYLES = `
     .header {
@@ -135,14 +133,14 @@ export class Header {
 
         let value;
         if (timeLine[endIndex - 1] - timeLine[startIndex] < 25 * 60 * 60 * 1000 && startDay === endDay) {
-            const dayName = DAYS[startDate.getDay()];
-            const monthName = MONTHS[startDate.getMonth()];
+            const dayName = props.daysLabels[startDate.getDay()];
+            const monthName = props.monthsLabels[startDate.getMonth()];
             const year = startDate.getFullYear();
 
             value = `${dayName}, ${startDay} ${monthName} ${year}`;
         } else {
-            const monthName = MONTHS[startDate.getMonth()];
-            const endMonthName = MONTHS[endDate.getMonth()];
+            const monthName = props.monthsLabels[startDate.getMonth()];
+            const endMonthName = props.monthsLabels[endDate.getMonth()];
             const year = startDate.getFullYear();
             const endYear = endDate.getFullYear();
 

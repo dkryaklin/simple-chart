@@ -31,6 +31,8 @@ class SimpleChart extends HTMLElement {
             isLoading: true,
             lines: [],
             hiddenLines: [],
+            daysLabels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            monthsLabels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         };
 
         this.shadow = this.attachShadow({ mode: 'open' });

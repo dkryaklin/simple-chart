@@ -9,6 +9,8 @@ const STYLES = `
         right: 16px;
         opacity: 1;
         transition: 0.2s opacity;
+        pointer-events: none;
+        z-index: 1000;
     }
     .axis-y.--off {
         opacity: 0;

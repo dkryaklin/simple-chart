@@ -4,97 +4,21 @@ const STROKE_WIDTH = 3;
 
 const STYLES = `
     .lines-svg {
+        opacity: 1;
+        transition: 0.2s opacity;
         transform: scale(1, -1);
+    }
+    .lines-svg.--hover {
+        opacity: 0.5;
     }
     .line-svg-path {
         vector-effect: non-scaling-stroke;
         opacity: 1;
         stroke-width: ${STROKE_WIDTH};
-        // transform: translateY(0);
         transition: 0.2s opacity;
     }
     .line-svg-path.--off {
         opacity: 0;
-        // transform: translateY(30px);
-    }
-    .header {
-        position: relative;
-        display: flex;
-        font-weight: 600;
-        align-items: center;
-    }
-    .header.--zoomed > .header-title {
-        opacity: 0;
-        font-size: 8px;
-        transform: translateY(-30px);
-    }
-    .header.--zoomed > .header-zoom {
-        opacity: 1;
-        font-size: 15px;
-        transform: translateY(0);
-    }
-    .header-title {
-        flex-grow: 1;
-        line-height: 50px;
-        font-size: 15px;
-        opacity: 1;
-        transform: translateY(0);
-        transition: 0.2s transform, 0.2s opacity, 0.2s font-size;
-    }
-    .header-zoom {
-        position: absolute;
-        left: 0;
-        top: 0;
-        font-size: 8px;
-        line-height: 50px;
-        color: #48AAF0;
-        display: flex;
-        align-items: center;
-        opacity: 0;
-        transform: translateY(30px);
-        transition: 0.2s transform, 0.2s opacity, 0.2s font-size;
-        cursor: pointer;
-    }
-    .header-zoom > svg {
-        margin-right: 10px;
-        width: 18px;
-        height: 18px;
-    }
-    .header-days {
-        position: absolute;
-        right: 0;
-        top: 0;
-        line-height: 50px;
-        font-size: 13px;
-        flex-shrink: 0;
-    }
-    .header-days.--show-down {
-        animation: show-up 0.2s 1 ease-in-out;
-    }
-    .header-days.--show-up {
-        animation: show-down 0.2s 1 ease-in-out;
-    }
-    .header-days.--hide-down {
-        animation: hide-up 0.2s 1 ease-in-out;
-    }
-    .header-days.--hide-up {
-        animation: hide-down 0.2s 1 ease-in-out;
-    }
-    @keyframes show-up {
-        0% {transform:translateY(-30px);opacity:0;font-size:7px;}
-        100%{transform:translateY(0);opacity:1;font-size:13px;}
-    }
-    @keyframes show-down {
-        0% {transform:translateY(30px);opacity:0;font-size:7px;}
-        100%{transform:translateY(0);opacity:1;font-size:13px;}
-    }
-    @keyframes hide-up {
-        0% {transform:translateY(0);opacity:1;font-size:13px;}
-        100%{transform:translateY(-30px);opacity:0;font-size:7px;}
-    }
-    @keyframes hide-down {
-        0% {transform:translateY(0);opacity:1;font-size:13px;}
-        100%{transform:translateY(30px);opacity:0;font-size:7px;}
     }
 `;
 
@@ -162,6 +86,12 @@ export class Lines {
     }
 
     updateScale(props) {
+        if ((props.hoveredIndex || props.hoveredIndex === 0) && props.lines[0].type === 'bar') {
+            this.svg.classList.add('--hover');
+        } else {
+            this.svg.classList.remove('--hover');
+        }
+
         this.svg.setAttribute('width', props.chartWidth);
 
         let scaleY = props.chartHeight / props.rangeMaxY;
