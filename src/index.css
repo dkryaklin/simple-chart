@@ -1,10 +1,17 @@
 body {
+    font-family: 'Open Sans', sans-serif;
     margin: 0;
     overflow-x: hidden;
     touch-action: pan-y pinch-zoom;
+    display: flex;
+    justify-content: center;
+}
+body.--night {
+    background-color: #242F3E;
 }
 
 .charts {
+    flex-direction: column;
     display: flex;
     flex-wrap: wrap;
 }
@@ -13,10 +20,32 @@ body {
     width: 400px;
     height: auto;
     overflow:hidden;
+    flex-shrink: 0;
 }
 
-@media (max-width: 900px) {
-    .charts {
-        flex-direction: column;
-    }
+.switcher {
+    display: flex;
+    color: #108BE3;
+    font-size: 20px;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 20px;
+};
+
+.to-day,.to-night {
+    display: block;
+}
+.to-day.--off, .to-night.--off {
+    display: none;
+}
+.readme {
+    display: flex;
+    flex-direction: column;
+    height: 200px;
+    align-items: center;
+    justify-content: center;
+}
+.--night a {
+    color: #fff;
 }

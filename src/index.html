@@ -7,33 +7,34 @@
 
 <body>
   <script src="./chart.js"></script>
-  <!-- <script src="./chart.js"></script>
-  <script src="./web.js"></script> -->
-
   <div class="charts">
     <div class="chart">
-      <simple-chart title="Foollowers" url="/data/1" width="400" height="300"></simple-chart>
+      <simple-chart title="Foollowers" url="/data/1" width="400" height="300" is-night="false"></simple-chart>
     </div>
     <div class="chart">
-      <simple-chart title="Interactions" url="/data/2" width="400" height="300"></simple-chart>
+      <simple-chart title="Interactions" url="/data/2" width="400" height="300" is-night="false"></simple-chart>
     </div>
     <div class="chart">
-      <simple-chart title="Messages" url="/data/3" width="400" height="300"></simple-chart>
+      <simple-chart title="Messages" url="/data/3" width="400" height="300" is-night="false"></simple-chart>
     </div>
     <div class="chart">
-      <simple-chart title="Views" url="/data/4" width="400" height="300"></simple-chart>
+      <simple-chart title="Views" url="/data/4" width="400" height="300" is-night="false"></simple-chart>
     </div>
     <div class="chart">
-      <simple-chart title="Apps" url="/data/5" width="400" height="300"></simple-chart>
+      <simple-chart title="Apps" url="/data/5" width="400" height="300" is-night="false"></simple-chart>
     </div>
     <div class="chart">
-      <div class="reame">
-        <div class="to-day">Switch to day mode</div>
-        <div class="to-night">Switch to night mode</div>
-        <link href="https://ya.ru" target="_blank">To github
+      <div class="readme">
+        <div class="switcher" onClick>
+          <div class="to-day --off">Switch to day mode</div>
+          <div class="to-night">Switch to night mode</div>
+        </div>
+
+        <a href="https://github.com/dkryaklin/simple-chart" target="_blank">To GitHub</a>
+        <a href="https://t.me/dkryaklin" target="_blank">@dkryaklin</a>
       </div>
     </div>
-  </div>
+    <script src="./demo.js"></script>
   </div>
 </body>
 

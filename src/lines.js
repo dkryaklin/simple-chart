@@ -61,8 +61,11 @@ export class Lines {
 
             const path = DomHelper.svg('path', this.svg, 'line-svg-path');
 
-            path.setAttribute('d', line.path);
-            path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+            if (line.path) {
+                path.setAttribute('d', line.path);
+                path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+            }
+
             path.setAttribute('stroke', line.color);
 
             if (line.type === 'area' || line.type === 'bar') {
@@ -105,8 +108,10 @@ export class Lines {
                 }
 
                 const { path } = this.paths[line.id];
-                path.setAttribute('d', line.path);
-                path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+                if (line.path) {
+                    path.setAttribute('d', line.path);
+                    path.setAttribute('transform', `scale(${1 / scaleX},${scaleY * line.fixScaleY})`);
+                }
             }
         });
     }

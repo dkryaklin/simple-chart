@@ -15,6 +15,9 @@ const STYLES = `
     .axis-y.--off {
         opacity: 0;
     }
+    .--night .axis-y-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
     .axis-y-item {
         position: absolute;
         left: 0;
@@ -27,6 +30,9 @@ const STYLES = `
     .axis-y-item.--right {
         text-align: end;
         border-bottom: 1px solid rgba(24, 45, 59, 0.05);
+    }
+    .--night .axis-y-item.--right {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     .axis-y-items {
         position: absolute;

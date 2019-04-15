@@ -1,3 +1,4 @@
+/* eslint-disable prefer-destructuring */
 import { DomHelper } from './helpers';
 
 const ARROW_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><g data-name="Group 1"><path data-name="Rectangle 1" fill="none" d="M21 21H0V0h21z"/><path data-name="Path 1" d="M15.59 11.49l-8.6 8.6A1.4 1.4 0 1 1 5 18.11l7.6-7.61-7.6-7.6A1.4 1.4 0 0 1 6.99.9l8.6 8.6a1.4 1.4 0 0 1 0 1.98z" fill="#D2D5D7"/></g></svg>';
@@ -17,6 +18,10 @@ const STYLES = `
         font-size: 12px;
         z-index: 1001;
     }
+    .--night .tooltip {
+        background-color: #1C2533;
+        box-shadow: none;
+    }
     .tooltip.--off {
         opacity: 0;
         pointer-events: none;
@@ -30,6 +35,9 @@ const STYLES = `
         pointer-events: none;
         opacity: 1;
         transition: 0.2s opacity;
+    }
+    .--night .tooltip-hover {
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
     }
     .tooltip-hover.--bar {
         border: 0;
@@ -78,6 +86,9 @@ const STYLES = `
         border-radius: 50%;
         border: 2px solid;
     }
+    .--night .hover-item {
+        background-color: #242F3E;
+    }
     .hover-item.--area {
         opacity: 1;
     }
@@ -105,13 +116,23 @@ export class Tooltip {
     render(props) {
         this.target.addEventListener('mouseenter', event => this.mouseEnter(event));
         this.target.addEventListener('mouseleave', event => this.mouseLeave(event));
-
         this.target.addEventListener('mousemove', event => this.mouseMove(event));
+
+        this.target.addEventListener('touchmove', (event) => {
+            this.selectedIndex = null;
+            this.mouseMove(event);
+        });
+        this.target.addEventListener('touchend', (event) => {
+            this.mouseMove(event);
+            setTimeout(() => {
+                this.mouseClick(event);
+            });
+        });
+
         this.target.addEventListener('click', event => this.mouseClick(event));
-        this.target.addEventListener('touchstart', event => this.mouseClick(event));
         document.addEventListener('click', () => this.mouseLeave());
 
-        this.hover = DomHelper.div('tooltip-hover', this.target);
+        this.hover = DomHelper.div('tooltip-hover --off', this.target);
         if (props.lines[0].type === 'bar') {
             this.hover.classList.add('--bar');
         }
@@ -159,7 +180,20 @@ export class Tooltip {
         }
 
         const blockWidth = this.props.chartWidth / this.amount;
-        const clientX = (event ? event.clientX : this.prevClientX) - this.chartRect.left;
+        if (!this.chartRect) {
+            this.chartRect = this.target.getBoundingClientRect();
+        }
+
+        let clientX;
+        if (event && typeof event.clientX === 'number') {
+            clientX = event.clientX;
+        } else if (event && event.touches[0]) {
+            clientX = event.touches[0].clientX;
+        } else {
+            clientX = this.prevClientX;
+        }
+        clientX -= this.chartRect.left;
+
         this.prevClientX = clientX;
 
         let prev = -1;
@@ -202,9 +236,6 @@ export class Tooltip {
 
     hoveredValue(props) {
         let index = props.hoveredIndex;
-        if (index === this.prevIndex && !this.selectedIndex) {
-            return;
-        }
         this.prevIndex = index;
 
         if ((this.selectedIndex || this.selectedIndex === 0) && !props.isZoomed) {

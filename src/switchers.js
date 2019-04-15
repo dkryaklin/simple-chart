@@ -15,8 +15,8 @@ const STYLES = `
         pointer-events: none;
     }
     .switchers.--abs {
-        position: absolute;
-        bottom: 0;
+        position:relative;
+        margin-top: -40px;
     }
     .switcher {
         height: 36px;
@@ -29,18 +29,23 @@ const STYLES = `
         position: relative;
         cursor: pointer;
         margin: 6px;
+        flex-shrink: 0;
+        white-space: nowrap;
     }
     .switcher.--off .switcher-front {
         opacity: 0;
         transform: translateY(-30px);
+        pointer-events: none;
     }
     .switcher-back {
         padding: 0 24px;
         line-height: 32px;
         border: 2px solid;
         border-radius: 18px;
+        white-space: nowrap;
     }
     .switcher-front {
+        white-space: nowrap;
         border-radius: 18px;
         left: 0;
         top: 0;

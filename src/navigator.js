@@ -29,6 +29,9 @@ const STYLES = `
         width: 100%;
         transform: translateX(5px);
     }
+    .--night .nav-left, .--night .nav-right {
+        background-color: #304259;
+    }
     .nav-right {
         transform: translateX(-5px);
     }
@@ -49,6 +52,9 @@ const STYLES = `
         z-index: 1;
         cursor: pointer;
         position:relative;
+    }
+    .--night .nav-selector {
+        border-color: #56626D;
     }
     .nav-selector:before, .nav-selector:after {
         content: '';
@@ -228,8 +234,11 @@ export class Navigator {
 
             const path = DomHelper.svg('path', this.svg, 'nav-svg-path');
 
-            path.setAttribute('d', line.path);
-            path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
+            if (line.path) {
+                path.setAttribute('d', line.path);
+                path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
+            }
+
             path.setAttribute('stroke', line.color);
 
             if (line.type === 'area' || line.type === 'bar') {
@@ -277,12 +286,12 @@ export class Navigator {
                 if (props.stacked || props.percentage) {
                     line = props.lines[props.lines.length - 1 - index];
                 }
-    
+
                 if (props.yScaled && index === props.lines.length - 1) {
                     scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
                 }
 
-                if (props.hiddenLines.indexOf(line.id) === -1) {
+                if (props.hiddenLines.indexOf(line.id) === -1 && line.path) {
                     this.paths[line.id].path.setAttribute('d', line.path);
                     this.paths[line.id].path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
                 }

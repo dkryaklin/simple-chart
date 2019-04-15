@@ -17,6 +17,9 @@ const STYLES = `
         -webkit-tap-highlight-color: rgba(0,0,0,0);
         -webkit-tap-highlight-color: transparent;
     }
+    .chart.--night {
+        color: #fff;
+    }
 `;
 
 class SimpleChart extends HTMLElement {
@@ -350,11 +353,27 @@ class SimpleChart extends HTMLElement {
         return { path, fixScaleY };
     }
 
+    static get observedAttributes() {
+        return ['is-night'];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'is-night') {
+            if (newValue === 'true') {
+                this.chart.classList.add('--night');
+            } else {
+                this.chart.classList.remove('--night');
+            }
+            this.state.isNight = newValue === 'true';
+        }
+    }
+
     connectedCallback() {
         const dataUrl = this.getAttribute('url');
         const width = parseInt(this.getAttribute('width'), 10);
         const height = parseInt(this.getAttribute('height'), 10);
         const title = this.getAttribute('title');
+        const isNight = this.getAttribute('is-night') === 'true';
 
         fetch(`${dataUrl}/overview.json`).then(response => response.json()).then((data) => {
             const newState = {
@@ -366,6 +385,7 @@ class SimpleChart extends HTMLElement {
                 percentage: data.percentage,
                 stacked: data.stacked,
                 title,
+                isNight,
             };
 
             data.columns.forEach((column) => {
