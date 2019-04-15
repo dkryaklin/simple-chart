@@ -109,6 +109,11 @@ export class Tooltip {
 
     clickTooltip(event) {
         event.stopPropagation();
+
+        if (this.props.isZoomed) {
+            return;
+        }
+        
         const zoomedIndex = this.selectedIndex;
         this.selectedIndex = null;
         this.setProps({ zoomedIndex });
@@ -139,7 +144,8 @@ export class Tooltip {
         }
 
         const blockWidth = this.props.chartWidth / this.amount;
-        const clientX = event.clientX - this.chartRect.left;
+        const clientX = (event ? event.clientX : this.prevClientX) - this.chartRect.left;
+        this.prevClientX = clientX;
 
         let prev = -1;
         let hoveredIndex;
@@ -168,6 +174,10 @@ export class Tooltip {
             hoveredIndex = this.props.timeLine.length - 1;
         }
 
+        if (!event) {
+            return;
+        }
+
         if (hoveredIndex || hoveredIndex === 0) {
             this.setProps({ hoveredIndex });
         } else {
@@ -177,17 +187,17 @@ export class Tooltip {
 
     hoveredValue(props) {
         let index = props.hoveredIndex;
-        if (this.selectedIndex || this.selectedIndex === 0) {
+        if ((this.selectedIndex || this.selectedIndex === 0) && !props.isZoomed) {
             index = this.selectedIndex;
         }
 
-        if ((!index && index !== 0) || props.hiddenLines.length === props.lines.length) {
+        if ((!index && index !== 0) || props.hiddenLines.length === props.lines.length || !this.positions[index]) {
             this.hover.classList.add('--off');
             this.tooltip.classList.add('--off');
             return;
         }
 
-        if (this.selectedIndex || this.selectedIndex === 0) {
+        if (props.isZoomed || this.selectedIndex || this.selectedIndex === 0) {
             this.tooltip.classList.remove('--off');
         } else {
             this.tooltip.classList.add('--off');
@@ -235,7 +245,6 @@ export class Tooltip {
             }
 
             if (props.hiddenLines.indexOf(line.id) === -1) {
-                
                 const hoverItem = DomHelper.div(`hover-item --${line.type}`, this.hover);
                 hoverItem.style.bottom = `${(prevValue + line.column[index]) * scaleY}px`;
                 hoverItem.style.borderColor = line.color;
@@ -260,6 +269,16 @@ export class Tooltip {
     }
 
     update(newProps) {
+        if (newProps.zoomInit) {
+            this.tooltip.innerHTML = null;
+            this.hover.innerHTML = null;
+
+            this.positions = [];
+
+            this.props = newProps;
+            this.mouseMove();
+        }
+
         this.hoveredValue(newProps);
         this.props = newProps;
     }

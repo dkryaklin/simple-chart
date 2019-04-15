@@ -207,6 +207,12 @@ class SimpleChart extends HTMLElement {
     }
 
     setState(newState) {
+        if (this.state.isZoomed && newState.isZoomed === false) {
+            this.prevState.hiddenLines = this.state.hiddenLines;
+            
+            this.state = this.prevState;
+            this.allColumnDataCache = this.prevAllColumnDataCache;
+        }
         if (!this.state.isZoomed && newState.zoomedIndex) {
             this.prevState = this.state;
             this.prevAllColumnDataCache = this.allColumnDataCache;
@@ -222,8 +228,8 @@ class SimpleChart extends HTMLElement {
                 const newZoomedState = {
                     zoomInit: true,
                     isZoomed: true,
-                    startRange: 100 / 7 * 3,
-                    endRange: 100 / 7 * 4,
+                    startRange: 100 / 7 * 3 - (6 * 100 / this.state.width),
+                    endRange: 100 / 7 * 4 - (8 * 100 / this.state.width),
                     chartIndent: 16,
                     isLoading: false,
                     hiddenLines: this.state.hiddenLines,

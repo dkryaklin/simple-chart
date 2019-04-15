@@ -60,14 +60,14 @@ const STYLES = `
     }
     .nav-click-left, .nav-click-right {
         position: absolute;
-        left: -30px;
+        left: -38px;
         width: 40px;
         top: 0;
         height: 100%;
     }
     .nav-click-right {
         left: auto;
-        right: -30px;
+        right: -38px;
     }
     .nav-svg-wrapper {
         border-radius: 5px;
@@ -187,7 +187,7 @@ export class Navigator {
         newProps.scaleRange = (newProps.endRange - newProps.startRange) / 100;
         newProps.chartWidth = this.clickProps.width / newProps.scaleRange;
         newProps.left = newProps.chartWidth * newProps.startRange / 100;
-
+        newProps.hoveredIndex = null;
         this.setProps(newProps);
     }
 
