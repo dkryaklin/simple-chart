@@ -75,10 +75,19 @@ export class AxisY {
     }
 
     fillItems(axisItems, props) {
-        const blockHeight = (props.chartHeight - 20) / 5;
+        let blockHeight;
+        let amountBlocks;
+        if (props.percentage) {
+            amountBlocks = 5;
+            blockHeight = (props.chartHeight) / (amountBlocks - 1);
+        } else {
+            amountBlocks = 6;
+            blockHeight = (props.chartHeight - 20) / (amountBlocks - 1);
+        }
+
         const scaleY = props.chartHeight / this.maxY;
 
-        for (let i = 1; i < 6; i += 1) {
+        for (let i = 1; i < amountBlocks; i += 1) {
             let value = i * blockHeight / scaleY;
 
             if (value > 1000000) {
@@ -87,6 +96,10 @@ export class AxisY {
                 value = `${(value / 1000).toFixed(2)}K`;
             } else {
                 value = `${Math.round(value)}`;
+            }
+
+            if (props.percentage) {
+                value = `${Math.round(i * 100 / (amountBlocks - 1))}`;
             }
 
             const axisItem = this.createItem(props, axisItems, value);

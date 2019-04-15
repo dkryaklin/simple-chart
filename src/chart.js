@@ -14,6 +14,8 @@ const STYLES = `
         display: flex;
         flex-direction: column;
         position: relative;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        -webkit-tap-highlight-color: transparent;
     }
 `;
 
@@ -218,7 +220,7 @@ class SimpleChart extends HTMLElement {
             this.state.isZoomed = false;
             this.state.zoomInit = true;
         }
-        if (!this.state.isZoomed && newState.zoomedIndex) {
+        if (!this.state.isZoomed && newState.zoomedIndex && !this.state.percentage) {
             const zoomedDate = new Date(this.state.timeLine[newState.zoomedIndex]);
 
             let url = this.state.dataUrl;

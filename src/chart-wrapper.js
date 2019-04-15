@@ -78,6 +78,9 @@ export class ChartWrapper {
 
     init(newProps) {
         this.chartWrapper.style.height = `${newProps.chartHeight + 35}px`;
+        if (newProps.percentage) {
+            this.chartWrapper.style.marginTop = '15px';
+        }
 
         this.axisY.init(newProps);
         this.axisYright.init(newProps);

@@ -51,6 +51,16 @@ const STYLES = `
         justify-content: space-between;
         pointer-events: none;
     }
+    .tooltip-item > span {
+        display: flex;
+    }
+    .tooltip-item > span > span {
+        min-width: 25px;
+        text-align: right;
+        font-weight: 600;
+        margin-right: 7px;
+        display: block;
+    }
     .tooltip-item > span.--all {
         font-weight: 600;
     }
@@ -230,10 +240,11 @@ export class Tooltip {
             if (props.hiddenLines.indexOf(line.id) === -1) {
                 let { name } = line;
                 if (props.percentage) {
-                    name = `perc ${name}`;
+                    name = `<span>${Math.round(line.column[index] / props.allColumnData[index] * 100)}%</span>${name}`;
                 }
-                const item = DomHelper.div('tooltip-item', this.tooltip, `<span>${name}</span><span style="color:${line.color}">${0}</span>`);
-                item.innerHTML = `<span>${line.name}</span><span style="color:${line.color}">${line.column[index]}</span>`;
+
+                const item = DomHelper.div('tooltip-item', this.tooltip);
+                item.innerHTML = `<span>${name}</span><span style="color:${line.color}">${line.column[index]}</span>`;
             }
         });
 
@@ -268,7 +279,7 @@ export class Tooltip {
             }
         });
 
-        if (props.stacked) {
+        if (props.stacked && !props.percentage) {
             DomHelper.div('tooltip-item', this.tooltip, `<span>${'All'}</span><span class="--all">${prevValue}</span>`);
         }
     }
