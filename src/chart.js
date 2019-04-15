@@ -173,7 +173,7 @@ class SimpleChart extends HTMLElement {
         if (((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) || this.state.zoomInit) {
             this.prevColumnsData = [];
             this.state.lines = this.state.lines.map((line) => {
-                if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                if (this.state.hiddenLines.indexOf(line.id) === -1 || this.state.zoomInit) {
                     return { ...line, ...this.generatePath(this.state, line) };
                 }
                 return line;

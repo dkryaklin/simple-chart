@@ -272,7 +272,11 @@ export class Tooltip {
         }
         DomHelper.div('tooltip-date', this.tooltip, dateStr);
 
-        props.lines.forEach((line) => {
+        for (let i = 0; i < props.lines.length; i += 1) {
+            let line = props.lines[i];
+            if (props.stacked || props.percentage) {
+                line = props.lines[props.lines.length - 1 - i];
+            }
             if (props.hiddenLines.indexOf(line.id) === -1) {
                 let { name } = line;
                 if (props.percentage) {
@@ -282,7 +286,7 @@ export class Tooltip {
                 const item = DomHelper.div('tooltip-item', this.tooltip);
                 item.innerHTML = `<span>${name}</span><span style="color:${line.color}">${line.column[index]}</span>`;
             }
-        });
+        };
 
         let scaleY = props.chartHeight / props.rangeMaxY;
 

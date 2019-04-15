@@ -234,11 +234,8 @@ export class Navigator {
 
             const path = DomHelper.svg('path', this.svg, 'nav-svg-path');
 
-            if (line.path) {
-                path.setAttribute('d', line.path);
-                path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
-            }
-
+            path.setAttribute('d', line.path);
+            path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
             path.setAttribute('stroke', line.color);
 
             if (line.type === 'area' || line.type === 'bar') {
@@ -291,7 +288,7 @@ export class Navigator {
                     scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
                 }
 
-                if (props.hiddenLines.indexOf(line.id) === -1 && line.path) {
+                if (props.hiddenLines.indexOf(line.id) === -1) {
                     this.paths[line.id].path.setAttribute('d', line.path);
                     this.paths[line.id].path.setAttribute('transform', `scale(1,${scaleY * line.fixScaleY})`);
                 }
