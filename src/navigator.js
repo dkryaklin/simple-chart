@@ -10,6 +10,12 @@ const STYLES = `
         border-radius: 5px;
         overflow: hidden;
         position:relative;
+        opacity: 1;
+        transition: 0.2s opacity;
+    }
+    .navigator.--off {
+        opacity: 0;
+        pointer-events: none;
     }
     .nav-wrapper {
         display: flex;
@@ -83,7 +89,7 @@ const STYLES = `
     .nav-svg {
         position: absolute;
         left: 0;
-        top: 1px;
+        top: 0;
     }
     .nav-svg-path {
         vector-effect: non-scaling-stroke;
@@ -202,6 +208,7 @@ export class Navigator {
     }
 
     renderLines(props) {
+        this.navSvgWrapper.innerHTML = null;
         this.svg = DomHelper.svg('svg', this.navSvgWrapper, 'nav-svg');
         this.svg.setAttribute('width', props.width);
         this.svg.setAttribute('height', NAV_HEIGHT_INNER);
@@ -284,6 +291,15 @@ export class Navigator {
     }
 
     update(newProps) {
+        if (newProps.zoomInit) {
+            this.renderLines(newProps);
+            if (newProps.hideNavigator) {
+                this.navigator.classList.add('--off');
+            } else {
+                this.navigator.classList.remove('--off');
+            }
+        }
+
         this.hiddenLines(newProps);
         this.range(newProps);
         this.props = newProps;

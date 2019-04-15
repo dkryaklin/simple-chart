@@ -123,7 +123,7 @@ export class AxisY {
 
         if (newProps.lines.length === newProps.hiddenLines.length ||
             (this.isRight && newProps.yScaled && newProps.hiddenLines.indexOf(newProps.lines[newProps.lines.length - 1].id) > -1) ||
-            (!this.isRight && newProps.lines.length - 1 === newProps.hiddenLines.length && newProps.hiddenLines.indexOf(newProps.lines[newProps.lines.length - 1].id) === -1)) {
+            (!this.isRight && newProps.yScaled && newProps.lines.length - 1 === newProps.hiddenLines.length && newProps.hiddenLines.indexOf(newProps.lines[newProps.lines.length - 1].id) === -1)) {
             this.axisY.classList.add('--off');
         } else {
             this.axisY.classList.remove('--off');

@@ -7,6 +7,16 @@ const STYLES = `
         margin-top: 17px;
         display: flex;
         flex-wrap: wrap;
+        opacity: 1;
+        transition: 0.2s opacity;
+    }
+    .switchers.--off {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .switchers.--abs {
+        position: absolute;
+        bottom: 0;
     }
     .switcher {
         height: 36px;
@@ -97,10 +107,10 @@ class Switcher {
 
 export class Switchers {
     constructor(props, setProps) {
+        this.target = props.target;
         this.setProps = setProps;
 
         DomHelper.style(props.shadow, STYLES);
-        this.switchers = DomHelper.div('switchers', props.target);
     }
 
     render(props) {
@@ -108,12 +118,23 @@ export class Switchers {
     }
 
     update(newProps) {
+        if (newProps.zoomInit) {
+            if (newProps.lines.length === 1) {
+                this.switchers.classList.add('--off');
+            } else {
+                this.switchers.classList.remove('--off');
+            }
+            this.switchers.innerHTML = null;
+            this.render(newProps);
+        }
+
         this.switcherList.forEach((switcher) => {
             switcher.update(newProps);
         });
     }
 
     init(newProps) {
+        this.switchers = DomHelper.div(`switchers ${newProps.lines.length === 1 ? '--abs --off' : ''}`, this.target);
         this.render(newProps);
     }
 }

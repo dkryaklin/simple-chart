@@ -45,6 +45,7 @@ export class Lines {
         // this.svg.setAttribute('viewBox', `0 ${this.prevValueTop} ${props.width} ${this.prevValueHeight}`);
 
         this.paths = {};
+        this.svg.innerHTML = null;
         let scaleY = props.chartHeight / props.rangeMaxY;
         const scaleX = props.width / props.chartWidth;
 
@@ -158,6 +159,10 @@ export class Lines {
     // }
 
     update(newProps) {
+        if (newProps.zoomInit) {
+            this.render(newProps);
+        }
+
         this.updateScale(newProps);
         this.hiddenLines(newProps);
     }

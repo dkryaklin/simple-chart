@@ -51,6 +51,9 @@ class SimpleChart extends HTMLElement {
     }
 
     createCache() {
+        if (this.state.maxCache) {
+            return;
+        }
         this.state.maxCache = {};
         this.state.lines.forEach((line) => {
             const mapped = line.column.map((val, i) => ({ val, i }));
@@ -62,10 +65,10 @@ class SimpleChart extends HTMLElement {
     calculate() {
         if (this.state.percentage || this.state.stacked) {
             if (!this.allColumnDataCache) {
-                this.allColumnDataCache = [];
+                this.allColumnDataCache = {};
             }
 
-            const key = `key${this.state.hiddenLines.join('')}`;
+            const key = `key${this.state.hiddenLines.sort().join('')}`;
             if (!this.allColumnDataCache[key]) {
                 const allColumnData = [];
                 this.state.lines.forEach((line) => {
@@ -159,24 +162,17 @@ class SimpleChart extends HTMLElement {
             return;
         }
 
-        if (this.state.zoomInit) {
-            this.createCache();
-            this.calculate();
+        this.createCache();
+        this.calculate();
 
+        if (((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) || this.state.zoomInit) {
             this.prevColumnsData = [];
-            this.state.lines = this.state.lines.map(line => ({ ...line, ...this.generatePath(this.state, line) }));
-        } else {
-            this.calculate();
-
-            if ((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length) {
-                this.prevColumnsData = [];
-                this.state.lines = this.state.lines.map((line) => {
-                    if (this.state.hiddenLines.indexOf(line.id) === -1) {
-                        return { ...line, ...this.generatePath(this.state, line) };
-                    }
-                    return line;
-                });
-            }
+            this.state.lines = this.state.lines.map((line) => {
+                if (this.state.hiddenLines.indexOf(line.id) === -1) {
+                    return { ...line, ...this.generatePath(this.state, line) };
+                }
+                return line;
+            });
         }
 
         this.header.update(this.state);
@@ -208,15 +204,21 @@ class SimpleChart extends HTMLElement {
 
     setState(newState) {
         if (this.state.isZoomed && newState.isZoomed === false) {
-            this.prevState.hiddenLines = this.state.hiddenLines;
-            
-            this.state = this.prevState;
-            this.allColumnDataCache = this.prevAllColumnDataCache;
+            this.prevState.hideNavigator = this.state.hideNavigator;
+            if (!this.prevState.hideNavigator) {
+                this.prevState.hiddenLines = this.state.hiddenLines;
+            }
+
+            this.state = { ...this.prevState };
+            this.state.zoomedIndex = null;
+            this.state.isLoading = false;
+            this.allColumnDataCache = { ...this.prevAllColumnDataCache };
+
+            this.state.hideNavigator = false;
+            this.state.isZoomed = false;
+            this.state.zoomInit = true;
         }
         if (!this.state.isZoomed && newState.zoomedIndex) {
-            this.prevState = this.state;
-            this.prevAllColumnDataCache = this.allColumnDataCache;
-
             const zoomedDate = new Date(this.state.timeLine[newState.zoomedIndex]);
 
             let url = this.state.dataUrl;
@@ -225,7 +227,12 @@ class SimpleChart extends HTMLElement {
             url += `/${zoomedDate.getDate() > 9 ? zoomedDate.getDate() : `0${zoomedDate.getDate()}`}.json`;
 
             fetch(url).then(response => response.json()).then((data) => {
+                this.prevState = { ...this.state };
+                this.prevAllColumnDataCache = { ...this.allColumnDataCache };
+                this.allColumnDataCache = null;
+
                 const newZoomedState = {
+                    maxCache: null,
                     zoomInit: true,
                     isZoomed: true,
                     startRange: 100 / 7 * 3 - (6 * 100 / this.state.width),
@@ -261,6 +268,11 @@ class SimpleChart extends HTMLElement {
                     }
                 });
 
+                newZoomedState.hideNavigator = this.prevState.lines.length !== newZoomedState.lines.length;
+                if (newZoomedState.hideNavigator) {
+                    newZoomedState.endRange = 100;
+                    newZoomedState.startRange = 0;
+                }
                 newZoomedState.scaleRange = (newZoomedState.endRange - newZoomedState.startRange) / 100;
                 newZoomedState.chartWidth = newZoomedState.width / newZoomedState.scaleRange;
                 newZoomedState.chartHeight = newZoomedState.height;

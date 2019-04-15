@@ -130,6 +130,11 @@ export class Tooltip {
 
     mouseClick(event) {
         event.stopPropagation();
+
+        if (this.props.hiddenLines.length === this.props.lines.length) {
+            return;
+        }
+
         this.selectedIndex = this.props.hoveredIndex;
         this.hoveredValue(this.props);
     }
@@ -174,7 +179,7 @@ export class Tooltip {
             hoveredIndex = this.props.timeLine.length - 1;
         }
 
-        if (!event) {
+        if (!event || this.props.hoveredIndex === hoveredIndex) {
             return;
         }
 
