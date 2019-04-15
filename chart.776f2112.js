@@ -723,11 +723,8 @@ function () {
 
         var path = _helpers.DomHelper.svg('path', this.svg, 'nav-svg-path');
 
-        if (line.path) {
-          path.setAttribute('d', line.path);
-          path.setAttribute('transform', "scale(1,".concat(scaleY * line.fixScaleY, ")"));
-        }
-
+        path.setAttribute('d', line.path);
+        path.setAttribute('transform', "scale(1,".concat(scaleY * line.fixScaleY, ")"));
         path.setAttribute('stroke', line.color);
 
         if (line.type === 'area' || line.type === 'bar') {
@@ -805,7 +802,7 @@ function () {
             scaleY = (NAV_HEIGHT_INNER - NAV_STROKE_WIDTH) / props.yScaledAllMaxY;
           }
 
-          if (props.hiddenLines.indexOf(line.id) === -1 && line.path) {
+          if (props.hiddenLines.indexOf(line.id) === -1) {
             this.paths[line.id].path.setAttribute('d', line.path);
             this.paths[line.id].path.setAttribute('transform', "scale(1,".concat(scaleY * line.fixScaleY, ")"));
           }
@@ -1183,11 +1180,8 @@ function () {
 
         var path = _helpers.DomHelper.svg('path', this.svg, 'line-svg-path');
 
-        if (line.path) {
-          path.setAttribute('d', line.path);
-          path.setAttribute('transform', "scale(".concat(1 / scaleX, ",").concat(scaleY * line.fixScaleY, ")"));
-        }
-
+        path.setAttribute('d', line.path);
+        path.setAttribute('transform', "scale(".concat(1 / scaleX, ",").concat(scaleY * line.fixScaleY, ")"));
         path.setAttribute('stroke', line.color);
 
         if (line.type === 'area' || line.type === 'bar') {
@@ -1237,11 +1231,8 @@ function () {
           }
 
           var path = _this2.paths[line.id].path;
-
-          if (line.path) {
-            path.setAttribute('d', line.path);
-            path.setAttribute('transform', "scale(".concat(1 / scaleX, ",").concat(scaleY * line.fixScaleY, ")"));
-          }
+          path.setAttribute('d', line.path);
+          path.setAttribute('transform', "scale(".concat(1 / scaleX, ",").concat(scaleY * line.fixScaleY, ")"));
         }
       });
     } // updateViewBox(props) {
@@ -1539,19 +1530,28 @@ function () {
 
       _helpers.DomHelper.div('tooltip-date', this.tooltip, dateStr);
 
-      props.lines.forEach(function (line) {
+      for (var i = 0; i < props.lines.length; i += 1) {
+        var line = props.lines[i];
+
+        if (props.stacked || props.percentage) {
+          line = props.lines[props.lines.length - 1 - i];
+        }
+
         if (props.hiddenLines.indexOf(line.id) === -1) {
-          var name = line.name;
+          var _line = line,
+              name = _line.name;
 
           if (props.percentage) {
             name = "<span>".concat(Math.round(line.column[index] / props.allColumnData[index] * 100), "%</span>").concat(name);
           }
 
-          var item = _helpers.DomHelper.div('tooltip-item', _this3.tooltip);
+          var item = _helpers.DomHelper.div('tooltip-item', this.tooltip);
 
           item.innerHTML = "<span>".concat(name, "</span><span style=\"color:").concat(line.color, "\">").concat(line.column[index], "</span>");
         }
-      });
+      }
+
+      ;
       var scaleY = props.chartHeight / props.rangeMaxY;
       this.hover.innerHTML = null;
       this.hover.style.transform = "translateX(".concat(this.positions[index].position, "px)");
@@ -2006,7 +2006,7 @@ function (_HTMLElement) {
       if ((this.state.percentage || this.state.stacked) && prevHiddenLines.length !== this.state.hiddenLines.length || this.state.zoomInit) {
         this.prevColumnsData = [];
         this.state.lines = this.state.lines.map(function (line) {
-          if (_this5.state.hiddenLines.indexOf(line.id) === -1) {
+          if (_this5.state.hiddenLines.indexOf(line.id) === -1 || _this5.state.zoomInit) {
             return _objectSpread({}, line, _this5.generatePath(_this5.state, line));
           }
 
@@ -2301,7 +2301,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53512" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "54754" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
