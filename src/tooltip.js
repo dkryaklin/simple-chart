@@ -202,6 +202,11 @@ export class Tooltip {
 
     hoveredValue(props) {
         let index = props.hoveredIndex;
+        if (index === this.prevIndex && !this.selectedIndex) {
+            return;
+        }
+        this.prevIndex = index;
+
         if ((this.selectedIndex || this.selectedIndex === 0) && !props.isZoomed) {
             index = this.selectedIndex;
         }
@@ -221,9 +226,9 @@ export class Tooltip {
         this.hover.classList.remove('--off');
 
         if (this.positions[index].position > 200) {
-            this.tooltip.style.left = `${this.positions[index].position - 160 - 17}px`;
+            this.tooltip.style.transform = `translateX(${this.positions[index].position - 160 - 17}px)`;
         } else {
-            this.tooltip.style.left = `${this.positions[index].position + 17}px`;
+            this.tooltip.style.transform = `translateX(${this.positions[index].position + 17}px)`;
         }
 
         this.tooltip.innerHTML = null;
@@ -251,7 +256,7 @@ export class Tooltip {
         let scaleY = props.chartHeight / props.rangeMaxY;
 
         this.hover.innerHTML = null;
-        this.hover.style.left = `${this.positions[index].position}px`;
+        this.hover.style.transform = `translateX(${this.positions[index].position}px)`;
         let prevValue = 0;
         const blockWidth = Math.ceil(props.chartWidth / this.amount) + 1;
 
@@ -295,8 +300,10 @@ export class Tooltip {
             this.mouseMove();
         }
 
-        this.hoveredValue(newProps);
-        this.props = newProps;
+        requestAnimationFrame(() => {
+            this.hoveredValue(newProps);
+            this.props = newProps;
+        });
     }
 
     init(newProps) {

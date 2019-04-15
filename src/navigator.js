@@ -301,8 +301,11 @@ export class Navigator {
         }
 
         this.hiddenLines(newProps);
-        this.range(newProps);
-        this.props = newProps;
+
+        requestAnimationFrame(() => {
+            this.range(newProps);
+            this.props = newProps;
+        });
     }
 
     init(newProps) {
